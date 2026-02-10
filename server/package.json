@@ -1,0 +1,13 @@
+{
+  "name": "collab-3d-server",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Collaborative 3D editing server with CRDT",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

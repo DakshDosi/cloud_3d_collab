@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collaborative 3D Editor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+      background: #1a1a2e;
+      color: #fff;
+    }
+
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    #controls {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+      min-width: 250px;
+      z-index: 100;
+    }
+
+    #controls h2 {
+      margin-bottom: 15px;
+      font-size: 18px;
+      color: #4ECDC4;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      background: #4ECDC4;
+      border: none;
+      border-radius: 6px;
+      color: #1a1a2e;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #45B7D1;
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.danger {
+      background: #FF6B6B;
+      color: white;
+    }
+
+    button.danger:hover {
+      background: #ff5252;
+    }
+
+    #status {
+      margin-top: 15px;
+      padding: 10px;
+      background: rgba(78, 205, 196, 0.1);
+      border-radius: 6px;
+      font-size: 12px;
+      border-left: 3px solid #4ECDC4;
+    }
+
+    #status.connected {
+      border-left-color: #4ECDC4;
+      background: rgba(78, 205, 196, 0.1);
+    }
+
+    #status.disconnected {
+      border-left-color: #FF6B6B;
+      background: rgba(255, 107, 107, 0.1);
+    }
+
+    #users {
+      margin-top: 15px;
+    }
+
+    #users h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #999;
+    }
+
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .user-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    #selected-info {
+      margin-top: 15px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    #selected-info h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #4ECDC4;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .info-label {
+      color: #999;
+    }
+
+    .cursor {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 99;
+      border: 2px solid white;
+      transform: translate(-50%, -50%);
+      transition: all 0.1s ease-out;
+    }
+
+    .cursor-label {
+      position: absolute;
+      top: 25px;
+      left: 0;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .helper-text {
+      margin-top: 15px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      font-size: 11px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  
+  <div id="controls">
+    <h2>🎨 Collaborative 3D Editor</h2>
+    
+    <div class="button-group">
+      <button onclick="app.addCube()">+ Cube</button>
+      <button onclick="app.addSphere()">+ Sphere</button>
+      <button onclick="app.addCylinder()">+ Cylinder</button>
+    </div>
+
+    <div class="button-group">
+      <button class="danger" onclick="app.deleteSelected()">Delete Selected</button>
+    </div>
+
+    <div id="status" class="disconnected">
+      Connecting...
+    </div>
+
+    <div id="users">
+      <h3>Active Users</h3>
+      <div id="user-list"></div>
+    </div>
+
+    <div id="selected-info" style="display: none;">
+      <h3>Selected Object</h3>
+      <div id="selected-details"></div>
+    </div>
+
+    <div class="helper-text">
+      <strong>Controls:</strong><br>
+      • Click: Select object<br>
+      • Drag: Move on ground plane<br>
+      • Q/E: Rotate Y axis<br>
+      • W/S: Scale up/down<br>
+      • Mouse wheel: Orbit camera
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module" src="client.js"></script>
+</body>
+</html>
