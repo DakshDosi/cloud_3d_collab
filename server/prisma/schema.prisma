@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  scenes    Scene[]
+  models    Model[]
+  likes     ModelLike[]
+  downloads ModelDownload[]
+}
+
+model Scene {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  objects  Object3D[]
+  versions SceneVersion[]
+  models   Model[]
+}
+
+model Object3D {
+  id      String @id @default(uuid())
+  sceneId String
+  type    String
+  data    Json
+
+  scene Scene @relation(fields: [sceneId], references: [id])
+}
+
+model SceneVersion {
+  id        String   @id @default(uuid())
+  sceneId   String
+  snapshot  Json
+  createdAt DateTime @default(now())
+
+  scene Scene @relation(fields: [sceneId], references: [id])
+}
+
+model Model {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  sceneId      String
+  ownerId      String
+  thumbnailUrl String?
+  createdAt    DateTime @default(now())
+
+  scene Scene @relation(fields: [sceneId], references: [id])
+  owner User  @relation(fields: [ownerId], references: [id])
+
+  likes     ModelLike[]
+  downloads ModelDownload[]
+}
+
+model ModelLike {
+  id      String @id @default(uuid())
+  modelId String
+  userId  String
+
+  model Model @relation(fields: [modelId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([modelId, userId])
+}
+
+model ModelDownload {
+  id        String   @id @default(uuid())
+  modelId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  model Model @relation(fields: [modelId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+}

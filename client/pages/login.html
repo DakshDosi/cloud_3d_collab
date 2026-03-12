@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — Collab3D</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f1117; color: #e2e8f0;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .bg {
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(78,205,196,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(78,205,196,.04) 1px, transparent 1px);
+      background-size: 40px 40px; pointer-events: none;
+    }
+    .card {
+      position: relative; background: #1a1f2e;
+      border: 1px solid #2d3748; border-radius: 16px;
+      padding: 40px; width: 100%; max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .logo { text-align: center; margin-bottom: 30px; }
+    .logo-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 50px; height: 50px;
+      background: linear-gradient(135deg, #4ECDC4, #45B7D1);
+      border-radius: 14px; font-size: 22px; margin-bottom: 12px;
+    }
+    .logo h1 { font-size: 20px; font-weight: 800; color: #fff; }
+    .logo p  { font-size: 13px; color: #718096; margin-top: 4px; }
+
+    .group { margin-bottom: 18px; }
+    label  { display: block; font-size: 12px; font-weight: 600; color: #a0aec0; margin-bottom: 7px; }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      width: 100%; padding: 11px 14px;
+      background: #0f1117; border: 1px solid #2d3748; border-radius: 8px;
+      color: #e2e8f0; font-size: 14px; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus { border-color: #4ECDC4; box-shadow: 0 0 0 3px rgba(78,205,196,.15); }
+
+    .pw-wrap { position: relative; }
+    .pw-toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: #718096; font-size: 16px; padding: 4px;
+    }
+    .pw-toggle:hover { color: #a0aec0; transform: translateY(-50%); }
+
+    .forgot { text-align: right; margin-top: -10px; margin-bottom: 18px; }
+    .forgot a { font-size: 12px; color: #718096; text-decoration: none; }
+    .forgot a:hover { color: #4ECDC4; }
+
+    .btn {
+      display: block; width: 100%; padding: 12px;
+      background: linear-gradient(135deg, #4ECDC4, #45B7D1);
+      border: none; border-radius: 8px; color: #0f1117;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn:hover    { opacity: 0.88; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .alert {
+      padding: 11px 14px; border-radius: 7px; font-size: 13px;
+      margin-bottom: 18px; display: none;
+      background: rgba(252,129,129,.1); border: 1px solid rgba(252,129,129,.3); color: #fc8181;
+    }
+    .alert.show { display: block; }
+
+    .bottom { text-align: center; font-size: 13px; color: #718096; margin-top: 20px; }
+    .bottom a { color: #4ECDC4; text-decoration: none; font-weight: 600; }
+    .bottom a:hover { text-decoration: underline; }
+
+    .spin {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,.2); border-top-color: #0f1117;
+      border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 7px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">🎨</div>
+      <h1>Collab3D</h1>
+      <p>Sign in to your account</p>
+    </div>
+
+    <div class="alert" id="alert"></div>
+
+    <form id="form" novalidate>
+      <div class="group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required />
+      </div>
+
+      <div class="group">
+        <label for="password">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
+          <button type="button" class="pw-toggle" id="pwToggle">👁</button>
+        </div>
+      </div>
+
+      <div class="forgot"><a href="forgot-password.html">Forgot password?</a></div>
+
+      <button type="submit" class="btn" id="submitBtn">Sign In</button>
+    </form>
+
+    <div class="bottom">
+      Don't have an account? <a href="signup.html">Create one</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth } from '../js/authManager.js';
+
+    // Already logged in — redirect
+    if (auth.isLoggedIn()) {
+      const rd = new URLSearchParams(location.search).get('redirect') || '/';
+      location.href = rd;
+    }
+
+    // Toggle password visibility
+    document.getElementById('pwToggle').addEventListener('click', () => {
+      const inp = document.getElementById('password');
+      inp.type  = inp.type === 'password' ? 'text' : 'password';
+    });
+
+    function showError(msg) {
+      const el = document.getElementById('alert');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn      = document.getElementById('submitBtn');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin"></span>Signing in…';
+
+      try {
+        await auth.login(email, password);
+        const rd = new URLSearchParams(location.search).get('redirect') || '/';
+        location.href = rd;
+      } catch (err) {
+        showError(err.message);
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    });
+  </script>
+</body>
+</html>

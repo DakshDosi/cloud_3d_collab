@@ -1,6 +1,6 @@
 /**
  * Shared types and utilities for CRDT-based collaborative 3D editing
- * Client-side version
+ * Includes State-Snapshot Versioning
  */
 
 // Generate unique IDs
@@ -47,13 +47,9 @@ export class VectorClock {
       if (thisVal < otherVal) hasLess = true;
     }
 
-    // Both have greater values on different keys = concurrent
     if (hasGreater && hasLess) return null; // concurrent
-    // This has all greater or equal values = this dominates
     if (hasGreater && !hasLess) return 1;  // this > other
-    // Other has all greater or equal values = other dominates
     if (hasLess && !hasGreater) return -1; // this < other
-    // All equal
     return 0; // equal
   }
 
@@ -86,22 +82,17 @@ export class LWWRegister {
     const comparison = this.vectorClock.compare(other.vectorClock);
 
     if (comparison === 1) {
-      // This is causally newer
       return;
     } else if (comparison === -1) {
-      // Other is causally newer
       this.set(other.value, other.timestamp, other.clientId, other.vectorClock);
     } else {
-      // Concurrent - use timestamp
       if (other.timestamp > this.timestamp) {
         this.set(other.value, other.timestamp, other.clientId, other.vectorClock);
       } else if (other.timestamp === this.timestamp) {
-        // Tie-break with clientId (deterministic)
         if (other.clientId > this.clientId) {
           this.set(other.value, other.timestamp, other.clientId, other.vectorClock);
         }
       }
-      // Merge vector clocks regardless
       this.vectorClock = this.vectorClock.merge(other.vectorClock);
     }
   }
@@ -122,6 +113,45 @@ export class LWWRegister {
       json.clientId,
       VectorClock.fromJSON(json.vectorClock)
     );
+  }
+}
+
+// Object Version Snapshot
+export class ObjectVersion {
+  constructor(versionId, snapshot, metadata = {}) {
+    this.versionId = versionId;
+    this.timestamp = Date.now();
+    this.snapshot = snapshot;
+    this.saveType = metadata.saveType || 'auto'; // 'auto', 'manual', 'checkpoint'
+    this.savedBy = metadata.savedBy || null;
+    this.label = metadata.label || null;
+    this.tags = metadata.tags || [];
+    this.changesSummary = metadata.changesSummary || null;
+  }
+
+  toJSON() {
+    return {
+      versionId: this.versionId,
+      timestamp: this.timestamp,
+      snapshot: this.snapshot,
+      saveType: this.saveType,
+      savedBy: this.savedBy,
+      label: this.label,
+      tags: this.tags,
+      changesSummary: this.changesSummary
+    };
+  }
+
+  static fromJSON(json) {
+    const version = new ObjectVersion(json.versionId, json.snapshot, {
+      saveType: json.saveType,
+      savedBy: json.savedBy,
+      label: json.label,
+      tags: json.tags,
+      changesSummary: json.changesSummary
+    });
+    version.timestamp = json.timestamp;
+    return version;
   }
 }
 
@@ -148,7 +178,19 @@ export class CRDTObject {
     
     this.createdBy = null;
     this.createdAt = now;
-    this.tombstone = null; // For soft deletion
+    this.tombstone = null;
+    
+    // Version history
+    this.versionHistory = {
+      enabled: true,
+      maxVersions: 50,
+      versions: [],
+      currentVersionId: null,
+      autoSaveInterval: 30000 // 30 seconds
+    };
+    
+    // Create initial version
+    this.saveVersion('manual', 'Initial creation');
   }
 
   updateProperty(property, value, timestamp, clientId, vectorClock) {
@@ -173,6 +215,137 @@ export class CRDTObject {
     return this.tombstone !== null;
   }
 
+  // Save current state as version
+  saveVersion(saveType = 'auto', label = null, tags = []) {
+    const versionId = generateId('v');
+    
+    const snapshot = {
+      transform: {
+        position: { ...this.transform.position.toJSON() },
+        rotation: { ...this.transform.rotation.toJSON() },
+        scale: { ...this.transform.scale.toJSON() }
+      },
+      metadata: {
+        color: { ...this.metadata.color.toJSON() },
+        name: { ...this.metadata.name.toJSON() }
+      }
+    };
+
+    const changesSummary = this.calculateChanges();
+
+    const version = new ObjectVersion(versionId, snapshot, {
+      saveType,
+      savedBy: this.createdBy,
+      label,
+      tags,
+      changesSummary
+    });
+
+    this.versionHistory.versions.push(version);
+    this.versionHistory.currentVersionId = versionId;
+
+    // Limit versions
+    if (this.versionHistory.versions.length > this.versionHistory.maxVersions) {
+      this.versionHistory.versions.shift();
+    }
+
+    return version;
+  }
+
+  // Calculate what changed from previous version
+  calculateChanges() {
+    if (this.versionHistory.versions.length === 0) {
+      return { modified: ['all'], delta: {} };
+    }
+
+    const previous = this.versionHistory.versions[this.versionHistory.versions.length - 1];
+    const changes = { modified: [], delta: {} };
+
+    // Check position
+    const prevPos = previous.snapshot.transform.position.value;
+    const currPos = this.transform.position.value;
+    if (JSON.stringify(prevPos) !== JSON.stringify(currPos)) {
+      changes.modified.push('transform.position');
+      changes.delta.position = { from: prevPos, to: currPos };
+    }
+
+    // Check rotation
+    const prevRot = previous.snapshot.transform.rotation.value;
+    const currRot = this.transform.rotation.value;
+    if (JSON.stringify(prevRot) !== JSON.stringify(currRot)) {
+      changes.modified.push('transform.rotation');
+      changes.delta.rotation = { from: prevRot, to: currRot };
+    }
+
+    // Check scale
+    const prevScale = previous.snapshot.transform.scale.value;
+    const currScale = this.transform.scale.value;
+    if (JSON.stringify(prevScale) !== JSON.stringify(currScale)) {
+      changes.modified.push('transform.scale');
+      changes.delta.scale = { from: prevScale, to: currScale };
+    }
+
+    // Check color
+    if (previous.snapshot.metadata.color.value !== this.metadata.color.value) {
+      changes.modified.push('metadata.color');
+      changes.delta.color = {
+        from: previous.snapshot.metadata.color.value,
+        to: this.metadata.color.value
+      };
+    }
+
+    return changes;
+  }
+
+  // Restore to a specific version
+  restoreVersion(versionId) {
+    const version = this.versionHistory.versions.find(v => v.versionId === versionId);
+    if (!version) {
+      throw new Error(`Version ${versionId} not found`);
+    }
+
+    // Save current state before restoring
+    this.saveVersion('checkpoint', `Before restoring to ${versionId}`);
+
+    // Restore snapshot
+    const snapshot = version.snapshot;
+    
+    this.transform.position.value = { ...snapshot.transform.position.value };
+    this.transform.rotation.value = { ...snapshot.transform.rotation.value };
+    this.transform.scale.value = { ...snapshot.transform.scale.value };
+    this.metadata.color.value = snapshot.metadata.color.value;
+    this.metadata.name.value = snapshot.metadata.name.value;
+
+    // Update timestamps
+    const now = Date.now();
+    this.transform.position.timestamp = now;
+    this.transform.rotation.timestamp = now;
+    this.transform.scale.timestamp = now;
+    this.metadata.color.timestamp = now;
+    this.metadata.name.timestamp = now;
+
+    this.versionHistory.currentVersionId = versionId;
+
+    return version;
+  }
+
+  // Get version by ID
+  getVersion(versionId) {
+    return this.versionHistory.versions.find(v => v.versionId === versionId);
+  }
+
+  // Get all versions
+  getVersionList() {
+    return this.versionHistory.versions.map(v => ({
+      versionId: v.versionId,
+      timestamp: v.timestamp,
+      saveType: v.saveType,
+      label: v.label,
+      tags: v.tags,
+      changesSummary: v.changesSummary
+    }));
+  }
+
   toJSON() {
     return {
       id: this.id,
@@ -189,7 +362,11 @@ export class CRDTObject {
       },
       createdBy: this.createdBy,
       createdAt: this.createdAt,
-      tombstone: this.tombstone
+      tombstone: this.tombstone,
+      versionHistory: {
+        ...this.versionHistory,
+        versions: this.versionHistory.versions.map(v => v.toJSON())
+      }
     };
   }
 
@@ -203,6 +380,15 @@ export class CRDTObject {
     obj.createdBy = json.createdBy;
     obj.createdAt = json.createdAt;
     obj.tombstone = json.tombstone;
+    
+    // Restore version history
+    if (json.versionHistory) {
+      obj.versionHistory = {
+        ...json.versionHistory,
+        versions: json.versionHistory.versions.map(v => ObjectVersion.fromJSON(v))
+      };
+    }
+    
     return obj;
   }
 }
@@ -215,11 +401,16 @@ export const OperationType = {
   METADATA: 'metadata'
 };
 
+// Message types
 export const MessageType = {
   OPERATION: 'operation',
   SNAPSHOT: 'snapshot',
   JOIN: 'join',
   PRESENCE: 'presence',
   PING: 'ping',
-  PONG: 'pong'
+  PONG: 'pong',
+  VERSION_SAVE: 'version_save',
+  VERSION_RESTORE: 'version_restore',
+  VERSION_LIST: 'version_list',
+  VERSION_RESPONSE: 'version_response'
 };

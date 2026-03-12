@@ -1,15 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Collaborative 3D Editor</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Collab3D</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -24,200 +20,335 @@
       position: relative;
     }
 
+    /* ── Top Bar ─────────────────────────────────── */
+    #topbar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      height: 52px;
+      background: rgba(15, 17, 23, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #2d3748;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+    }
+
+    .tb-logo {
+      font-size: 17px;
+      font-weight: 800;
+      color: #4ECDC4;
+      margin-right: 6px;
+      text-decoration: none;
+    }
+
+    .tb-divider {
+      width: 1px;
+      height: 26px;
+      background: #2d3748;
+    }
+
+    .tb-spacer { flex: 1; }
+
+    .tb-btn {
+      padding: 6px 14px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .tb-btn.ghost {
+      background: rgba(255,255,255,0.06);
+      color: #a0aec0;
+    }
+    .tb-btn.ghost:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+    .tb-btn.primary {
+      background: linear-gradient(135deg, #4ECDC4, #45B7D1);
+      color: #0f1117;
+    }
+    .tb-btn.primary:hover { opacity: 0.88; }
+
+    .tb-btn.danger {
+      background: rgba(252,129,129,0.12);
+      color: #fc8181;
+      border: 1px solid rgba(252,129,129,0.25);
+    }
+
+    /* Export dropdown */
+    .tb-dropdown { position: relative; }
+    .tb-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 9px;
+      min-width: 150px;
+      z-index: 9999;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .tb-dropdown:hover .tb-dropdown-menu { display: block; }
+    .tb-dropdown-menu button {
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      text-align: left;
+      background: none;
+      color: #a0aec0;
+      border: none;
+      border-radius: 0;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .tb-dropdown-menu button:hover {
+      background: rgba(78,205,196,0.1);
+      color: #4ECDC4;
+      transform: none;
+    }
+
+    /* User badge */
+    #userBadge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 20px;
+      border: 1px solid #2d3748;
+    }
+    .user-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4ECDC4;
+    }
+    #userBadge span { font-size: 13px; color: #a0aec0; }
+
+    /* ── Side Panel ───────────────────────────────── */
     #controls {
       position: absolute;
-      top: 20px;
-      left: 20px;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 20px;
-      border-radius: 8px;
+      top: 68px;
+      left: 16px;
+      background: rgba(26, 31, 46, 0.92);
       backdrop-filter: blur(10px);
-      min-width: 250px;
+      padding: 18px;
+      border-radius: 10px;
+      border: 1px solid #2d3748;
+      width: 230px;
       z-index: 100;
     }
 
-    #controls h2 {
-      margin-bottom: 15px;
-      font-size: 18px;
-      color: #4ECDC4;
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #4a5568;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 9px;
     }
 
-    .button-group {
+    .btn-group {
       display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
+      gap: 7px;
+      margin-bottom: 14px;
       flex-wrap: wrap;
     }
 
     button {
-      padding: 10px 16px;
+      padding: 8px 13px;
       background: #4ECDC4;
       border: none;
       border-radius: 6px;
       color: #1a1a2e;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
-      font-size: 14px;
+      font-size: 13px;
+      transition: all 0.15s;
     }
+    button:hover { background: #45B7D1; transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
 
-    button:hover {
-      background: #45B7D1;
-      transform: translateY(-1px);
+    button.secondary {
+      background: rgba(255,255,255,0.07);
+      color: #a0aec0;
     }
+    button.secondary:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
-    button:active {
-      transform: translateY(0);
+    button.danger-btn {
+      background: rgba(252,129,129,0.12);
+      color: #fc8181;
+      border: 1px solid rgba(252,129,129,0.25);
     }
+    button.danger-btn:hover { background: rgba(252,129,129,0.22); }
 
-    button.danger {
-      background: #FF6B6B;
-      color: white;
-    }
-
-    button.danger:hover {
-      background: #ff5252;
-    }
-
+    /* Status */
     #status {
-      margin-top: 15px;
-      padding: 10px;
-      background: rgba(78, 205, 196, 0.1);
+      padding: 8px 11px;
       border-radius: 6px;
       font-size: 12px;
       border-left: 3px solid #4ECDC4;
+      background: rgba(78,205,196,0.08);
+      margin-bottom: 14px;
     }
-
-    #status.connected {
-      border-left-color: #4ECDC4;
-      background: rgba(78, 205, 196, 0.1);
-    }
-
     #status.disconnected {
-      border-left-color: #FF6B6B;
-      background: rgba(255, 107, 107, 0.1);
+      border-left-color: #fc8181;
+      background: rgba(252,129,129,0.08);
+      color: #fc8181;
     }
+    #status.connected { color: #4ECDC4; }
 
-    #users {
-      margin-top: 15px;
-    }
-
-    #users h3 {
-      font-size: 14px;
-      margin-bottom: 8px;
-      color: #999;
-    }
-
+    /* Users */
+    #users { margin-bottom: 12px; }
     .user-item {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 6px;
-      font-size: 13px;
-    }
-
-    .user-color {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-
-    #selected-info {
-      margin-top: 15px;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 6px;
+      margin-bottom: 5px;
       font-size: 12px;
+      color: #a0aec0;
+    }
+    .user-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
 
-    #selected-info h3 {
-      font-size: 14px;
-      margin-bottom: 8px;
-      color: #4ECDC4;
+    /* Selected info */
+    #selected-info {
+      margin-bottom: 12px;
+      padding: 10px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 7px;
+      font-size: 12px;
+      display: none;
     }
-
+    #selected-info h3 { font-size: 12px; color: #4ECDC4; margin-bottom: 8px; font-weight: 700; }
     .info-row {
       display: flex;
       justify-content: space-between;
       margin-bottom: 4px;
       font-size: 11px;
     }
+    .info-label { color: #718096; }
 
-    .info-label {
-      color: #999;
+    /* Help text */
+    .help-text {
+      padding: 9px 11px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 6px;
+      font-size: 11px;
+      color: #718096;
+      line-height: 1.7;
     }
 
+    /* ── Cursors ─────────────────────────────────── */
     .cursor {
-      position: absolute;
-      width: 20px;
-      height: 20px;
+      position: fixed;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
       pointer-events: none;
-      z-index: 99;
-      border: 2px solid white;
+      z-index: 999;
+      border: 2px solid rgba(255,255,255,0.8);
       transform: translate(-50%, -50%);
-      transition: all 0.1s ease-out;
+      transition: left 0.08s, top 0.08s;
     }
-
     .cursor-label {
       position: absolute;
-      top: 25px;
+      top: 20px;
       left: 0;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 3px 8px;
+      background: rgba(0,0,0,0.75);
+      padding: 2px 7px;
       border-radius: 4px;
       font-size: 11px;
       white-space: nowrap;
-    }
-
-    .helper-text {
-      margin-top: 15px;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 6px;
-      font-size: 11px;
-      color: #999;
+      color: #fff;
     }
   </style>
 </head>
 <body>
+
   <div id="canvas-container"></div>
-  
+
+  <!-- Top Bar -->
+  <div id="topbar">
+    <a class="tb-logo" href="/">🎨 Collab3D</a>
+
+    <button class="tb-btn ghost" onclick="location.href='/pages/library.html'">📚 Library</button>
+
+    <div class="tb-divider"></div>
+
+    <div class="tb-dropdown">
+      <button class="tb-btn ghost">⬇ Export ▾</button>
+      <div class="tb-dropdown-menu">
+        <button onclick="window.app && app.exportScene('json')">JSON</button>
+        <button onclick="window.app && app.exportScene('gltf')">GLTF</button>
+        <button onclick="window.app && app.exportScene('obj')">OBJ</button>
+      </div>
+    </div>
+
+    <button class="tb-btn primary" onclick="window.app && app.publishScene()">🚀 Publish</button>
+
+    <div class="tb-spacer"></div>
+
+    <button class="tb-btn ghost" id="btnHistory">⏱ History</button>
+
+    <div id="userBadge">
+      <div class="user-dot"></div>
+      <span id="topbarUser">Guest</span>
+    </div>
+
+    <button class="tb-btn ghost" id="btnAuth" onclick="handleAuthClick()">Sign In</button>
+  </div>
+
+  <!-- Side Panel -->
   <div id="controls">
-    <h2>🎨 Collaborative 3D Editor</h2>
-    
-    <div class="button-group">
-      <button onclick="app.addCube()">+ Cube</button>
-      <button onclick="app.addSphere()">+ Sphere</button>
-      <button onclick="app.addCylinder()">+ Cylinder</button>
+
+    <div class="section-label">Add Objects</div>
+    <div class="btn-group">
+      <button onclick="window.app && app.addCube()">+ Cube</button>
+      <button onclick="window.app && app.addSphere()">+ Sphere</button>
+      <button onclick="window.app && app.addCylinder()">+ Cylinder</button>
     </div>
 
-    <div class="button-group">
-      <button class="danger" onclick="app.deleteSelected()">Delete Selected</button>
+    <div class="btn-group">
+      <button class="secondary" onclick="window.app && app.undo()">↩ Undo</button>
+      <button class="secondary" onclick="window.app && app.redo()">↪ Redo</button>
+      <button class="danger-btn" onclick="window.app && app.deleteSelected()">🗑 Del</button>
     </div>
 
-    <div id="status" class="disconnected">
-      Connecting...
-    </div>
+    <div id="status" class="disconnected">Connecting…</div>
 
     <div id="users">
-      <h3>Active Users</h3>
+      <div class="section-label">Active Users</div>
       <div id="user-list"></div>
     </div>
 
-    <div id="selected-info" style="display: none;">
+    <div id="selected-info">
       <h3>Selected Object</h3>
       <div id="selected-details"></div>
     </div>
 
-    <div class="helper-text">
-      <strong>Controls:</strong><br>
-      • Click: Select object<br>
-      • Drag: Move on ground plane<br>
-      • Q/E: Rotate Y axis<br>
-      • W/S: Scale up/down<br>
-      • Mouse wheel: Orbit camera
+    <div class="help-text">
+      <strong>Controls</strong><br>
+      Click → select object<br>
+      Drag → move on ground<br>
+      Q / E → rotate Y axis<br>
+      W / S → scale up/down<br>
+      Del → delete object<br>
+      Ctrl+Z → undo
     </div>
+
   </div>
 
   <script type="importmap">
@@ -229,6 +360,27 @@
   }
   </script>
 
-  <script type="module" src="client.js"></script>
+  <script type="module">
+    import { auth } from './js/authManager.js';
+
+    function updateTopbar() {
+      const user = auth.getUser();
+      document.getElementById('topbarUser').textContent = user ? user.username : 'Guest';
+      document.getElementById('btnAuth').textContent    = user ? 'Sign Out' : 'Sign In';
+    }
+
+    updateTopbar();
+
+    window.handleAuthClick = function () {
+      if (auth.isLoggedIn()) {
+        auth.logout();
+      } else {
+        location.href = '/pages/login.html?redirect=' + encodeURIComponent(location.pathname);
+      }
+    };
+  </script>
+
+  <script type="module" src="./client.js"></script>
+
 </body>
 </html>
