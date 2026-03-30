@@ -1,3 +1,458 @@
+<!-- <!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Model Library — Collab3D</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f1117; color: #e2e8f0; min-height: 100vh;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(26,31,46,.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid #2d3748;
+      display: flex; align-items: center; gap: 16px;
+      padding: 0 24px; height: 58px;
+    }
+    .nav-logo { font-size: 18px; font-weight: 800; color: #4ECDC4; text-decoration: none; }
+    nav .spacer { flex: 1; }
+    .nav-btn {
+      padding: 7px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      cursor: pointer; text-decoration: none; border: none;
+    }
+    .nav-btn.ghost { background: transparent; color: #a0aec0; border: 1px solid #2d3748; }
+    .nav-btn.ghost:hover { border-color: #4ECDC4; color: #4ECDC4; }
+    .nav-btn.primary { background: linear-gradient(135deg, #4ECDC4, #45B7D1); color: #0f1117; }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 56px 24px 32px;
+      text-align: center;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(78,205,196,.08) 0%, transparent 70%);
+    }
+    .hero h1 { font-size: clamp(28px, 4vw, 42px); font-weight: 800; color: #fff; }
+    .hero p  { color: #718096; margin-top: 10px; font-size: 16px; }
+
+    /* ── Search + Filters ── */
+    .search-row {
+      display: flex; align-items: center; gap: 12px;
+      max-width: 900px; margin: 28px auto 0; padding: 0 24px;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      flex: 1; min-width: 240px;
+      display: flex; align-items: center;
+      background: #1a1f2e; border: 1px solid #2d3748; border-radius: 10px;
+      padding: 0 16px; gap: 10px;
+    }
+    .search-box input {
+      flex: 1; background: none; border: none; outline: none;
+      color: #e2e8f0; font-size: 15px; padding: 11px 0;
+    }
+    .search-box input::placeholder { color: #4a5568; }
+
+    .filter-btn {
+      padding: 10px 16px; background: #1a1f2e; border: 1px solid #2d3748;
+      border-radius: 8px; color: #a0aec0; font-size: 14px; cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .filter-btn:hover, .filter-btn.active { border-color: #4ECDC4; color: #4ECDC4; }
+
+    /* ── Tag chips ── */
+    .tags-row {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      max-width: 900px; margin: 16px auto 0; padding: 0 24px;
+    }
+    .tag {
+      padding: 5px 14px; background: #1a1f2e; border: 1px solid #2d3748;
+      border-radius: 20px; font-size: 13px; color: #a0aec0; cursor: pointer;
+      transition: all .15s;
+    }
+    .tag:hover, .tag.active { background: rgba(78,205,196,.12); border-color: #4ECDC4; color: #4ECDC4; }
+
+    /* ── Grid ── */
+    .grid-section { max-width: 1200px; margin: 32px auto; padding: 0 24px; }
+    .grid-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .grid-header h2 { font-size: 18px; font-weight: 700; color: #fff; }
+    .grid-header select {
+      background: #1a1f2e; border: 1px solid #2d3748; border-radius: 7px;
+      color: #a0aec0; padding: 7px 12px; font-size: 13px; cursor: pointer; outline: none;
+    }
+
+    .models-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── Model Card ── */
+    .model-card {
+      background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px;
+      overflow: hidden; cursor: pointer;
+      transition: border-color .15s, transform .15s, box-shadow .15s;
+    }
+    .model-card:hover {
+      border-color: #4ECDC4; transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(78,205,196,.1);
+    }
+
+    .card-thumb {
+      width: 100%; aspect-ratio: 4/3; background: #0f1117;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px; position: relative; overflow: hidden;
+    }
+    .card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .card-thumb canvas { width: 100% !important; height: 100% !important; }
+    .card-visibility {
+      position: absolute; top: 8px; right: 8px;
+      padding: 3px 8px; border-radius: 5px; font-size: 11px; font-weight: 600;
+      background: rgba(15,17,23,.8); color: #a0aec0;
+    }
+
+    .card-body { padding: 16px; }
+    .card-body h3 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .card-avatar {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: linear-gradient(135deg, #4ECDC4, #45B7D1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #0f1117; flex-shrink: 0;
+    }
+    .card-author { font-size: 13px; color: #718096; }
+
+    .card-stats { display: flex; gap: 14px; }
+    .stat { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #718096; }
+    .stat span:first-child { font-size: 14px; }
+
+    .card-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-sm {
+      flex: 1; padding: 8px; border-radius: 7px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none; transition: opacity .15s;
+    }
+    .btn-sm:hover { opacity: .85; }
+    .btn-import { background: linear-gradient(135deg, #4ECDC4, #45B7D1); color: #0f1117; }
+    .btn-like   { background: #2d3748; color: #a0aec0; }
+    .btn-like.liked { background: rgba(252,129,129,.15); color: #fc8181; }
+
+    /* ── Loading ── */
+    .loading {
+      grid-column: 1/-1; text-align: center; padding: 60px;
+      color: #718096; font-size: 15px;
+    }
+    .skeleton {
+      background: #1a1f2e; border-radius: 12px; overflow: hidden;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .skeleton-thumb { width: 100%; aspect-ratio: 4/3; background: #2d3748; }
+    .skeleton-body  { padding: 16px; }
+    .skeleton-line  {
+      background: #2d3748; border-radius: 4px; height: 14px; margin-bottom: 10px;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+    /* ── Empty state ── */
+    .empty { grid-column: 1/-1; text-align: center; padding: 80px 24px; color: #718096; }
+    .empty .emoji { font-size: 48px; margin-bottom: 16px; }
+    .empty h3 { font-size: 20px; color: #a0aec0; margin-bottom: 8px; }
+
+    /* ── Load more ── */
+    .load-more-row { text-align: center; margin-top: 32px; }
+    .btn-load-more {
+      padding: 11px 32px; background: #1a1f2e; border: 1px solid #2d3748;
+      border-radius: 8px; color: #a0aec0; font-size: 14px; cursor: pointer;
+    }
+    .btn-load-more:hover { border-color: #4ECDC4; color: #4ECDC4; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: #1a1f2e; border: 1px solid #4ECDC4; border-radius: 10px;
+      padding: 14px 20px; font-size: 14px; color: #e2e8f0;
+      transform: translateY(80px); opacity: 0;
+      transition: all .3s; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-logo" href="/">🎨 Collab3D</a>
+    <div class="spacer"></div>
+    <a class="nav-btn ghost" href="/pages/login.html" id="navLogin">Sign In</a>
+    <a class="nav-btn primary" href="/" id="navEditor">Open Editor</a>
+  </nav>
+
+  <div class="hero">
+    <h1>Model Library</h1>
+    <p>Discover, remix, and publish 3D scenes from the community.</p>
+  </div>
+
+  <div class="search-row">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="Search models…" />
+    </div>
+    <button class="filter-btn active" data-sort="createdAt">Latest</button>
+    <button class="filter-btn" data-sort="likes">Most Liked</button>
+    <button class="filter-btn" data-sort="downloads">Most Downloaded</button>
+  </div>
+
+  <div class="tags-row" id="tagsRow">
+    <span class="tag active" data-tag="">All</span>
+    <span class="tag" data-tag="architecture">Architecture</span>
+    <span class="tag" data-tag="nature">Nature</span>
+    <span class="tag" data-tag="vehicles">Vehicles</span>
+    <span class="tag" data-tag="characters">Characters</span>
+    <span class="tag" data-tag="abstract">Abstract</span>
+    <span class="tag" data-tag="sci-fi">Sci-Fi</span>
+  </div>
+
+  <section class="grid-section">
+    <div class="grid-header">
+      <h2 id="gridTitle">All Models</h2>
+      <span id="gridCount" style="color:#718096;font-size:14px"></span>
+    </div>
+    <div class="models-grid" id="modelsGrid">
+      <!-- Skeleton loaders -->
+      ${Array(8).fill(0).map(() => `
+        <!-- <div class="skeleton">
+          <div class="skeleton-thumb"></div>
+          <div class="skeleton-body">
+            <div class="skeleton-line" style="width:70%"></div>
+            <div class="skeleton-line" style="width:40%"></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="load-more-row" id="loadMoreRow" style="display:none">
+      <button class="btn-load-more" id="loadMoreBtn">Load More</button>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API = window.API_URL || 'http://localhost:8080/api';
+    const token  = localStorage.getItem('token');
+    const user   = JSON.parse(localStorage.getItem('user') || 'null');
+    const LIMIT  = 24;
+
+    let currentOffset = 0;
+    let currentSort   = 'createdAt';
+    let currentTag    = ''; -->
+    let currentSearch = '';
+    let totalModels   = 0;
+    let loading       = false;
+
+    if (user) {
+      document.getElementById('navLogin').textContent = user.username;
+      document.getElementById('navLogin').href = '#';
+    }
+
+    // ── Toast ──────────────────────────────────────────────────────────────
+    function toast(msg, duration = 3000) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), duration);
+    }
+
+    // ── Fetch models ────────────────────────────────────────────────────────
+    async function fetchModels(reset = false) {
+      if (loading) return;
+      loading = true;
+
+      if (reset) {
+        currentOffset = 0;
+        document.getElementById('modelsGrid').innerHTML = Array(6).fill(0)
+          .map(() => `<div class="skeleton"><div class="skeleton-thumb"></div><div class="skeleton-body"><div class="skeleton-line" style="width:70%"></div><div class="skeleton-line" style="width:40%"></div></div></div>`)
+          .join('');
+      }
+
+      const params = new URLSearchParams({
+        limit: LIMIT, offset: currentOffset,
+        sort: currentSort,
+        ...(currentTag    && { tag: currentTag }),
+        ...(currentSearch && { search: currentSearch })
+      });
+
+      try {
+        const res  = await fetch(`${API}/models?${params}`);
+
+        // Guard: if server returned HTML (error page) instead of JSON, show a useful message
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error(`Server error ${res.status}: API returned non-JSON. Check that the server is running on ${API.replace('/api','')}`);
+        }
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+
+        totalModels = data.total ?? 0;
+
+        if (reset) document.getElementById('modelsGrid').innerHTML = '';
+        renderModels(data.models || []);
+
+        document.getElementById('gridCount').textContent = `${totalModels} model${totalModels !== 1 ? 's' : ''}`;
+        document.getElementById('loadMoreRow').style.display =
+          (currentOffset + LIMIT < totalModels) ? 'block' : 'none';
+      } catch (err) {
+        document.getElementById('modelsGrid').innerHTML = `<div class="empty"><div class="emoji">⚠️</div><h3>Failed to load models</h3><p>${err.message}</p></div>`;
+        console.error('Library fetch error:', err);
+      } finally {
+        loading = false;
+      }
+    }
+
+    // ── Render model cards ──────────────────────────────────────────────────
+    function renderModels(models) {
+      const grid = document.getElementById('modelsGrid');
+
+      if (models.length === 0 && currentOffset === 0) {
+        grid.innerHTML = `<div class="empty"><div class="emoji">🗄️</div><h3>No models found</h3><p>Be the first to publish one!</p></div>`;
+        return;
+      }
+
+      models.forEach(model => {
+        const initials = (model.owner?.username || '?')[0].toUpperCase();
+        const card = document.createElement('div');
+        card.className = 'model-card';
+        card.dataset.id = model.id;
+        card.innerHTML = `
+          <div class="card-thumb">
+            ${model.thumbnailUrl
+              ? `<img src="${model.thumbnailUrl}" alt="${model.title}" loading="lazy" />`
+              : `<span>${['🧊','🌀','🔮','💠','🎭','🪄'][Math.floor(Math.random()*6)]}</span>`
+            }
+          </div>
+          <div class="card-body">
+            <h3 title="${model.title}">${model.title}</h3>
+            <div class="card-meta">
+              <div class="card-avatar">${initials}</div>
+              <span class="card-author">@${model.owner?.username || 'unknown'}</span>
+            </div>
+            <div class="card-stats">
+              <span class="stat"><span>❤️</span> ${model.likeCount}</span>
+              <span class="stat"><span>⬇️</span> ${model.downloadCount}</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn-sm btn-import" onclick="importModel('${model.id}','${model.title}',event)">Import</button>
+              <button class="btn-sm btn-like ${model._liked ? 'liked' : ''}" id="like-${model.id}" onclick="toggleLike('${model.id}',event)">
+                ${model._liked ? '❤️' : '🤍'} Like
+              </button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // ── Import model ────────────────────────────────────────────────────────
+    async function importModel(modelId, title, e) {
+      e.stopPropagation();
+      if (!token) { toast('Sign in to import models'); return; }
+
+      try {
+        const res  = await fetch(`${API}/models/${modelId}/download`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}` }
+        });
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error(`Server error ${res.status} — check server is running`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+
+        // Dispatch event so the editor can pick this up
+        window.dispatchEvent(new CustomEvent('importModel', { detail: data }));
+        toast(`"${title}" imported into your scene ✅`);
+
+        // If user is already in the editor, redirect there
+        if (window.app) {
+          window.app.importSnapshot(data.snapshot);
+        } else {
+          sessionStorage.setItem('pendingImport', JSON.stringify(data.snapshot));
+          setTimeout(() => { location.href = '/'; }, 1500);
+        }
+      } catch (err) {
+        toast(`Import failed: ${err.message}`);
+      }
+    }
+
+    // ── Like toggle ─────────────────────────────────────────────────────────
+    async function toggleLike(modelId, e) {
+      e.stopPropagation();
+      if (!token) { toast('Sign in to like models'); return; }
+
+      try {
+        const res  = await fetch(`${API}/models/${modelId}/like`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.headers.get('content-type')?.includes('application/json')) throw new Error(`Server error ${res.status}`);
+        const data = await res.json();
+        const btn  = document.getElementById(`like-${modelId}`);
+        if (data.liked) {
+          btn.className = 'btn-sm btn-like liked';
+          btn.innerHTML = '❤️ Like';
+        } else {
+          btn.className = 'btn-sm btn-like';
+          btn.innerHTML = '🤍 Like';
+        }
+      } catch (err) {
+        toast(`Error: ${err.message}`);
+      }
+    }
+
+    // ── Search debounce ─────────────────────────────────────────────────────
+    let searchTimer;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+//       clearTimeout(searchTimer); -->
+//       searchTimer = setTimeout(() => {
+//         currentSearch = e.target.value.trim();
+//         fetchModels(true);
+//       }, 350);
+//     });
+
+//     // ── Sort buttons ────────────────────────────────────────────────────────
+//     document.querySelectorAll('.filter-btn[data-sort]').forEach(btn => {
+//       btn.addEventListener('click', () => {
+//         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+//         btn.classList.add('active');
+//         currentSort = btn.dataset.sort;
+//         fetchModels(true);
+//       });
+//     });
+
+//     // ── Tag filter ──────────────────────────────────────────────────────────
+//     document.querySelectorAll('.tag').forEach(tag => {
+//       tag.addEventListener('click', () => {
+//         document.querySelectorAll('.tag').forEach(t => t.classList.remove('active'));
+//         tag.classList.add('active');
+//         currentTag = tag.dataset.tag;
+//         fetchModels(true);
+//       });
+//     });
+
+//     // ── Load more ───────────────────────────────────────────────────────────
+//     document.getElementById('loadMoreBtn').addEventListener('click', () => {
+//       currentOffset += LIMIT;
+//       fetchModels(false);
+//     });
+
+//     // ── Init ────────────────────────────────────────────────────────────────
+//     fetchModels(true);
+//   </script>
+// </body>
+// </html> 
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -241,7 +696,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const API    = '/api';
+    const API = window.API_URL || `${location.protocol}//${location.hostname}:8080/api`;
     const token  = localStorage.getItem('token');
     const user   = JSON.parse(localStorage.getItem('user') || 'null');
     const LIMIT  = 24;
@@ -287,17 +742,27 @@
 
       try {
         const res  = await fetch(`${API}/models?${params}`);
+
+        // Guard: if server returned HTML (error page) instead of JSON, show a useful message
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error(`Server error ${res.status}: API returned non-JSON. Check that the server is running on ${API.replace('/api','')}`);
+        }
+
         const data = await res.json();
-        totalModels = data.total;
+        if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+
+        totalModels = data.total ?? 0;
 
         if (reset) document.getElementById('modelsGrid').innerHTML = '';
-        renderModels(data.models);
+        renderModels(data.models || []);
 
         document.getElementById('gridCount').textContent = `${totalModels} model${totalModels !== 1 ? 's' : ''}`;
         document.getElementById('loadMoreRow').style.display =
           (currentOffset + LIMIT < totalModels) ? 'block' : 'none';
       } catch (err) {
         document.getElementById('modelsGrid').innerHTML = `<div class="empty"><div class="emoji">⚠️</div><h3>Failed to load models</h3><p>${err.message}</p></div>`;
+        console.error('Library fetch error:', err);
       } finally {
         loading = false;
       }
@@ -355,8 +820,10 @@
         const res  = await fetch(`${API}/models/${modelId}/download`, {
           method: 'POST', headers: { Authorization: `Bearer ${token}` }
         });
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error(`Server error ${res.status} — check server is running`);
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
 
         // Dispatch event so the editor can pick this up
         window.dispatchEvent(new CustomEvent('importModel', { detail: data }));
@@ -383,6 +850,7 @@
         const res  = await fetch(`${API}/models/${modelId}/like`, {
           method: 'POST', headers: { Authorization: `Bearer ${token}` }
         });
+        if (!res.headers.get('content-type')?.includes('application/json')) throw new Error(`Server error ${res.status}`);
         const data = await res.json();
         const btn  = document.getElementById(`like-${modelId}`);
         if (data.liked) {
