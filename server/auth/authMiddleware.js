@@ -45,3 +45,9 @@ export function requireAuth(req, res, next) {
     res.status(401).json({ error: "Invalid token" });
   }
 }
+
+export function verifyWsToken(token) {
+  if (!token) return null;
+  try { return jwt.verify(token, JWT_SECRET()); }
+  catch { return null; }
+}

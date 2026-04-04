@@ -1,6 +1,96 @@
+// generator client {
+//   provider = "prisma-client"
+//   output   = "../generated/prisma"
+// }
+
+// datasource db {
+//   provider = "postgresql"
+// }
+
+// model User {
+//   id           String   @id @default(uuid())
+//   username     String   @unique
+//   email        String   @unique
+//   passwordHash String
+//   createdAt    DateTime @default(now())
+
+//   scenes    Scene[]
+//   models    Model[]
+//   likes     ModelLike[]
+//   downloads ModelDownload[]
+// }
+
+// model Scene {
+//   id        String   @id @default(uuid())
+//   name      String
+//   ownerId   String
+//   createdAt DateTime @default(now())
+
+//   owner User @relation(fields: [ownerId], references: [id])
+
+//   objects  Object3D[]
+//   versions SceneVersion[]
+//   models   Model[]
+// }
+
+// model Object3D {
+//   id      String @id @default(uuid())
+//   sceneId String
+//   type    String
+//   data    Json
+
+//   scene Scene @relation(fields: [sceneId], references: [id])
+// }
+
+// model SceneVersion {
+//   id        String   @id @default(uuid())
+//   sceneId   String
+//   snapshot  Json
+//   createdAt DateTime @default(now())
+
+//   scene Scene @relation(fields: [sceneId], references: [id])
+// }
+
+// model Model {
+//   id           String   @id @default(uuid())
+//   title        String
+//   description  String?
+//   sceneId      String
+//   ownerId      String
+//   thumbnailUrl String?
+//   createdAt    DateTime @default(now())
+
+//   scene Scene @relation(fields: [sceneId], references: [id])
+//   owner User  @relation(fields: [ownerId], references: [id])
+
+//   likes     ModelLike[]
+//   downloads ModelDownload[]
+// }
+
+// model ModelLike {
+//   id      String @id @default(uuid())
+//   modelId String
+//   userId  String
+
+//   model Model @relation(fields: [modelId], references: [id])
+//   user  User  @relation(fields: [userId], references: [id])
+
+//   @@unique([modelId, userId])
+// }
+
+// model ModelDownload {
+//   id        String   @id @default(uuid())
+//   modelId   String
+//   userId    String
+//   createdAt DateTime @default(now())
+
+//   model Model @relation(fields: [modelId], references: [id])
+//   user  User  @relation(fields: [userId], references: [id])
+// }
+
+
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -8,82 +98,185 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
+  id               String    @id @default(uuid())
+  username         String    @unique
+  email            String    @unique
+  passwordHash     String    @map("password_hash")
+  avatarUrl        String?   @map("avatar_url")
+  bio              String?
+  resetToken       String?   @map("reset_token")
+  resetTokenExpiry DateTime? @map("reset_token_expiry")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  scenes    Scene[]
-  models    Model[]
-  likes     ModelLike[]
-  downloads ModelDownload[]
+  ownedScenes  Scene[]           @relation("SceneOwner")
+  permissions  ScenePermission[]
+  operations   Operation[]
+  models       Model[]
+  likes        ModelLike[]
+  downloads    ModelDownload[]
+  versions     SceneVersion[]
+
+  @@map("users")
 }
 
 model Scene {
-  id        String   @id @default(uuid())
-  name      String
-  ownerId   String
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  ownerId      String   @map("owner_id")
+  isPublic     Boolean  @default(false) @map("is_public")
+  snapshotJson Json?    @map("snapshot_json")
+  vectorClock  Json?    @map("vector_clock")
+  lastSeqNum   Int      @default(0) @map("last_seq_num")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  owner User @relation(fields: [ownerId], references: [id])
+  owner       User              @relation("SceneOwner", fields: [ownerId], references: [id])
+  permissions ScenePermission[]
+  objects     SceneObject[]
+  operations  Operation[]
+  versions    SceneVersion[]
+  model       Model?
 
-  objects  Object3D[]
-  versions SceneVersion[]
-  models   Model[]
+  @@map("scenes")
 }
 
-model Object3D {
-  id      String @id @default(uuid())
-  sceneId String
-  type    String
-  data    Json
+model ScenePermission {
+  id        String         @id @default(uuid())
+  sceneId   String         @map("scene_id")
+  userId    String         @map("user_id")
+  role      PermissionRole
+  createdAt DateTime       @default(now()) @map("created_at")
 
-  scene Scene @relation(fields: [sceneId], references: [id])
+  scene Scene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId],  references: [id], onDelete: Cascade)
+
+  @@unique([sceneId, userId])
+  @@map("scene_permissions")
+}
+
+enum PermissionRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model SceneObject {
+  id        String    @id
+  sceneId   String    @map("scene_id")
+  type      String    @default("mesh")
+  geometry  String    @default("box")
+  stateJson Json      @map("state_json")
+  createdBy String?   @map("created_by")
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  scene           Scene           @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  lineageAsChild  ObjectLineage[] @relation("ChildObject")
+  lineageAsParent ObjectLineage[] @relation("ParentObject")
+
+  @@map("scene_objects")
+}
+
+model ObjectLineage {
+  id             String   @id @default(uuid())
+  objectId       String   @map("object_id")
+  parentObjectId String   @map("parent_object_id")
+  operationId    String   @map("operation_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  object       SceneObject @relation("ChildObject",  fields: [objectId],       references: [id])
+  parentObject SceneObject @relation("ParentObject", fields: [parentObjectId], references: [id])
+
+  @@map("object_lineage")
+}
+
+model Operation {
+  id              String   @id @default(uuid())
+  sceneId         String   @map("scene_id")
+  clientId        String   @map("client_id")
+  userId          String?  @map("user_id")
+  op              String
+  objectId        String?  @map("object_id")
+  payloadJson     Json     @map("payload_json")
+  vectorClock     Json     @map("vector_clock")
+  timestamp       BigInt
+  seqNum          Int      @map("seq_num")
+  serverTimestamp DateTime @default(now()) @map("server_timestamp")
+
+  scene Scene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId],  references: [id])
+
+  @@index([sceneId, seqNum])
+  @@map("operations")
 }
 
 model SceneVersion {
-  id        String   @id @default(uuid())
-  sceneId   String
-  snapshot  Json
-  createdAt DateTime @default(now())
+  id              String    @id @default(uuid())
+  sceneId         String    @map("scene_id")
+  parentVersionId String?   @map("parent_version_id")
+  branchName      String    @default("main") @map("branch_name")
+  label           String?
+  snapshotJson    Json      @map("snapshot_json")
+  vectorClock     Json      @map("vector_clock")
+  seqNumAt        Int       @map("seq_num_at")
+  createdBy       String    @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
 
-  scene Scene @relation(fields: [sceneId], references: [id])
+  scene         Scene          @relation(fields: [sceneId],   references: [id], onDelete: Cascade)
+  createdByUser User           @relation(fields: [createdBy], references: [id])
+  parent        SceneVersion?  @relation("VersionTree", fields: [parentVersionId], references: [id])
+  children      SceneVersion[] @relation("VersionTree")
+
+  @@index([sceneId, createdAt])
+  @@map("scene_versions")
 }
 
 model Model {
-  id           String   @id @default(uuid())
-  title        String
-  description  String?
-  sceneId      String
-  ownerId      String
-  thumbnailUrl String?
-  createdAt    DateTime @default(now())
+  id            String   @id @default(uuid())
+  sceneId       String   @unique @map("scene_id")
+  ownerId       String   @map("owner_id")
+  title         String
+  description   String?
+  thumbnailUrl  String?  @map("thumbnail_url")
+  tags          String[] @default([])
+  isPublic      Boolean  @default(false) @map("is_public")
+  downloadCount Int      @default(0) @map("download_count")
+  likeCount     Int      @default(0) @map("like_count")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  scene Scene @relation(fields: [sceneId], references: [id])
-  owner User  @relation(fields: [ownerId], references: [id])
-
+  scene     Scene         @relation(fields: [sceneId], references: [id])
+  owner     User          @relation(fields: [ownerId], references: [id])
   likes     ModelLike[]
   downloads ModelDownload[]
+
+  @@index([isPublic, createdAt])
+  @@map("models")
 }
 
 model ModelLike {
-  id      String @id @default(uuid())
-  modelId String
-  userId  String
+  userId    String   @map("user_id")
+  modelId   String   @map("model_id")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  model Model @relation(fields: [modelId], references: [id])
-  user  User  @relation(fields: [userId], references: [id])
+  user  User  @relation(fields: [userId],  references: [id], onDelete: Cascade)
+  model Model @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
-  @@unique([modelId, userId])
+  @@id([userId, modelId])
+  @@map("model_likes")
 }
 
 model ModelDownload {
   id        String   @id @default(uuid())
-  modelId   String
-  userId    String
-  createdAt DateTime @default(now())
+  userId    String   @map("user_id")
+  modelId   String   @map("model_id")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  model Model @relation(fields: [modelId], references: [id])
-  user  User  @relation(fields: [userId], references: [id])
+  user  User  @relation(fields: [userId],  references: [id], onDelete: Cascade)
+  model Model @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@map("model_downloads")
 }

@@ -241,7 +241,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const API = window.API_URL || 'http://localhost:8080/api';
+    const API = `${location.protocol}//${location.hostname}:8080/api`;
     const token  = localStorage.getItem('token');
     const user   = JSON.parse(localStorage.getItem('user') || 'null');
     const LIMIT  = 24;
@@ -696,7 +696,7 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const API = window.API_URL || `${location.protocol}//${location.hostname}:8080/api`;
+    const API = `${location.protocol}//${location.hostname}:8080/api`;
     const token  = localStorage.getItem('token');
     const user   = JSON.parse(localStorage.getItem('user') || 'null');
     const LIMIT  = 24;

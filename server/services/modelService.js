@@ -1,5 +1,4 @@
 // server/services/modelService.js
-// Model Library — publish, browse, like, download, import
 
 import prisma from '../db/client.js';
 import { getScene } from './sceneService.js';
@@ -12,15 +11,15 @@ export async function publishModel(sceneId, userId, { title, description, tags =
 
   const model = await prisma.model.upsert({
     where:  { sceneId },
-    update: { title, description: description ?? null, tags, thumbnailUrl: thumbnailUrl ?? null, visibility: 'PUBLIC' },
+    update: { title, description: description ?? null, tags, thumbnailUrl: thumbnailUrl ?? null, isPublic: true },
     create: {
       sceneId,
-      ownerId:     userId,
+      ownerId:      userId,
       title,
-      description: description ?? null,
+      description:  description ?? null,
       tags,
       thumbnailUrl: thumbnailUrl ?? null,
-      visibility:   'PUBLIC'
+      isPublic:     true,
     },
     include: { owner: { select: { id: true, username: true, avatarUrl: true } } }
   });
@@ -28,43 +27,36 @@ export async function publishModel(sceneId, userId, { title, description, tags =
   return model;
 }
 
-// ── Unpublish / set to private ────────────────────────────────────────────────
+// ── Unpublish ─────────────────────────────────────────────────────────────────
 export async function unpublishModel(modelId, userId) {
   const model = await prisma.model.findUnique({ where: { id: modelId } });
   if (!model) throw new Error('Model not found');
   if (model.ownerId !== userId) throw new Error('Unauthorized');
-
-  return prisma.model.update({
-    where: { id: modelId },
-    data:  { visibility: 'PRIVATE' }
-  });
+  return prisma.model.update({ where: { id: modelId }, data: { isPublic: false } });
 }
 
 // ── Browse public models ──────────────────────────────────────────────────────
 export async function listPublicModels({ limit = 24, offset = 0, search, tag, sortBy = 'createdAt' } = {}) {
-  const where = { visibility: 'PUBLIC' };
+  const where = { isPublic: true };
 
   if (search) {
     where.OR = [
       { title:       { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } }
+      { description: { contains: search, mode: 'insensitive' } },
     ];
   }
-  if (tag) {
-    where.tags = { has: tag };
-  }
+  if (tag) where.tags = { has: tag };
 
-  const orderBy = {};
-  if (sortBy === 'likes')     orderBy.likeCount     = 'desc';
-  else if (sortBy === 'downloads') orderBy.downloadCount = 'desc';
-  else                        orderBy.createdAt      = 'desc';
+  const orderBy = sortBy === 'likes'     ? { likeCount: 'desc' }
+                : sortBy === 'downloads' ? { downloadCount: 'desc' }
+                : { createdAt: 'desc' };
 
   const [models, total] = await Promise.all([
     prisma.model.findMany({
       where,
       orderBy,
-      skip: offset,
-      take: limit,
+      skip:    Number(offset),   // ← must be Number, not string
+      take:    Number(limit),    // ← must be Number, not string
       include: { owner: { select: { id: true, username: true, avatarUrl: true } } }
     }),
     prisma.model.count({ where })
@@ -76,7 +68,7 @@ export async function listPublicModels({ limit = 24, offset = 0, search, tag, so
 // ── Get single model ──────────────────────────────────────────────────────────
 export async function getModel(modelId) {
   return prisma.model.findUnique({
-    where: { id: modelId },
+    where:   { id: modelId },
     include: {
       owner: { select: { id: true, username: true, avatarUrl: true } },
       scene: { select: { id: true, snapshotJson: true, vectorClock: true } }
@@ -84,12 +76,11 @@ export async function getModel(modelId) {
   });
 }
 
-// ── Like / unlike a model ─────────────────────────────────────────────────────
+// ── Like / unlike ─────────────────────────────────────────────────────────────
 export async function toggleLike(modelId, userId) {
   const existing = await prisma.modelLike.findUnique({
     where: { userId_modelId: { userId, modelId } }
   });
-
   if (existing) {
     await prisma.modelLike.delete({ where: { userId_modelId: { userId, modelId } } });
     await prisma.model.update({ where: { id: modelId }, data: { likeCount: { decrement: 1 } } });
@@ -101,31 +92,24 @@ export async function toggleLike(modelId, userId) {
   }
 }
 
-// ── Record a download ─────────────────────────────────────────────────────────
+// ── Record download ───────────────────────────────────────────────────────────
 export async function recordDownload(modelId, userId) {
   await prisma.modelDownload.create({ data: { modelId, userId } });
   await prisma.model.update({ where: { id: modelId }, data: { downloadCount: { increment: 1 } } });
 }
 
-// ── Import a model into a target scene ───────────────────────────────────────
-// Returns the source model's snapshot so the client can merge objects into
-// the active CRDT scene.
+// ── Import snapshot ───────────────────────────────────────────────────────────
 export async function importModelSnapshot(modelId) {
   const model = await prisma.model.findUnique({
-    where: { id: modelId },
+    where:   { id: modelId },
     include: { scene: { select: { snapshotJson: true } } }
   });
   if (!model) throw new Error('Model not found');
-  if (model.visibility !== 'PUBLIC') throw new Error('Model is not public');
-
-  return {
-    modelId:  model.id,
-    title:    model.title,
-    snapshot: model.scene.snapshotJson
-  };
+  if (!model.isPublic) throw new Error('Model is not public');
+  return { modelId: model.id, title: model.title, snapshot: model.scene.snapshotJson };
 }
 
-// ── Get likes status for requesting user ─────────────────────────────────────
+// ── Like status ───────────────────────────────────────────────────────────────
 export async function getLikeStatus(modelId, userId) {
   if (!userId) return false;
   const like = await prisma.modelLike.findUnique({

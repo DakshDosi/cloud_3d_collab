@@ -9,6 +9,7 @@ export class HistoryPanel {
     this.visible   = false;
     this.versions  = [];
     this.branch    = 'main';
+    this.api       = `${location.protocol}//${location.hostname}:8080/api`;
 
     this._buildDOM();
   }
@@ -136,7 +137,7 @@ export class HistoryPanel {
     list.innerHTML = '<div class="hp-loading">Loading…</div>';
 
     try {
-      const res  = await fetch(`/api/scenes/${this.sceneId}/versions?branch=${this.branch}&limit=50`, {
+      const res  = await fetch(`${this.api}/scenes/${this.sceneId}/versions?branch=${this.branch}&limit=50`, {
         headers: { Authorization: `Bearer ${this.token}` }
       });
       const data = await res.json();
@@ -187,7 +188,7 @@ export class HistoryPanel {
     const label = prompt('Label (optional):', `Save ${new Date().toLocaleTimeString()}`);
     if (label === null) return;
     try {
-      const res = await fetch(`/api/scenes/${this.sceneId}/versions/save`, {
+      const res = await fetch(`${this.api}/scenes/${this.sceneId}/versions/save`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.token}` },
         body:    JSON.stringify({ label: label || undefined, branchName: this.branch })
@@ -204,7 +205,7 @@ export class HistoryPanel {
   async _restore(version) {
     if (!confirm(`Restore to "${version.label || `Op #${version.seqNumAt}`}"?\n\nCurrent state will be auto-saved first.`)) return;
     try {
-      const res  = await fetch(`/api/scenes/${this.sceneId}/versions/${version.id}/restore`, {
+      const res  = await fetch(`${this.api}/scenes/${this.sceneId}/versions/${version.id}/restore`, {
         method:  'POST',
         headers: { Authorization: `Bearer ${this.token}` }
       });
@@ -225,7 +226,7 @@ export class HistoryPanel {
     const name = prompt('New branch name:');
     if (!name?.trim()) return;
     try {
-      const res = await fetch(`/api/scenes/${this.sceneId}/versions/${version.id}/branch`, {
+      const res = await fetch(`${this.api}/scenes/${this.sceneId}/versions/${version.id}/branch`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.token}` },
         body:    JSON.stringify({ branchName: name.trim() })
