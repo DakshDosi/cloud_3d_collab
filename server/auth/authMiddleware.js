@@ -40,10 +40,24 @@ export function requireAuth(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
+    if (req.user.id && !req.user.userId) req.user.userId = req.user.id;
     next();
   } catch (err) {
     res.status(401).json({ error: "Invalid token" });
   }
+}
+
+export function optionalAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header) return next();
+  
+  const token = header.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    if (req.user.id && !req.user.userId) req.user.userId = req.user.id;
+  } catch (err) {}
+  next();
 }
 
 export function verifyWsToken(token) {

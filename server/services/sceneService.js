@@ -50,6 +50,23 @@ export async function createScene(ownerId, { name, description, isPublic = false
   return scene;
 }
 
+export async function createSceneWithId(id, ownerId, { name, description, isPublic = false }) {
+  const scene = await prisma.scene.create({
+    data: {
+      id,
+      name,
+      description: description ?? null,
+      ownerId,
+      isPublic,
+      permissions: {
+        create: { userId: ownerId, role: 'OWNER' }
+      }
+    },
+    include: { owner: { select: { id: true, username: true } } }
+  });
+  return scene;
+}
+
 // ── Get scene by id ───────────────────────────────────────────────────────────
 export async function getScene(sceneId) {
   return prisma.scene.findUnique({

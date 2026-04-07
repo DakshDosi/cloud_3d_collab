@@ -529,7 +529,7 @@ import { requestLogger, notFound, errorHandler } from './middleware/errorHandler
 
 import {
   persistOperation, persistSnapshot, loadSnapshot,
-  upsertObject, softDeleteObject, recordLineage
+  upsertObject, softDeleteObject, recordLineage, createSceneWithId
 } from './services/sceneService.js';
 import { maybeAutoSnapshot } from './services/versionService.js';
 
@@ -777,6 +777,9 @@ class CollaborativeServer {
   async handleJoin(ws, clientId, sceneId, userId) {
     let room = this.rooms.get(sceneId);
     if (!room) {
+      if (userId) {
+        await createSceneWithId(sceneId, userId, { name: sceneId, description: "" }).catch(() => {});
+      }
       room = new RoomManager(sceneId);
       await room.hydrateFromDB();
       this.rooms.set(sceneId, room);
@@ -846,6 +849,7 @@ app.use('/api', (req, res) => {
 
 // ── Static files AFTER API routes ────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '../client')));
+app.use('/exports', express.static(path.join(__dirname, '../exports')));
 
 // SPA fallback — non-API routes serve index.html
 app.get('/', (req, res) => {

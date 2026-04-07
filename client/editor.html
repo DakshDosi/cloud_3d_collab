@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Collab3D — Editor</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overflow:hidden;background:#1a1a2e;color:#fff}
+    #canvas-container{width:100vw;height:100vh;position:relative}
+
+    /* ── Top bar ─────────────────────────────────────────────── */
+    #topbar{
+      position:absolute;top:0;left:0;right:0;z-index:200;height:52px;
+      background:rgba(15,17,23,.94);backdrop-filter:blur(12px);
+      border-bottom:1px solid #2d3748;
+      display:flex;align-items:center;padding:0 16px;gap:8px
+    }
+    .tb-logo{font-size:16px;font-weight:800;color:#4ECDC4;text-decoration:none;margin-right:4px;white-space:nowrap}
+    .tb-divider{width:1px;height:22px;background:#2d3748;flex-shrink:0}
+    .tb-spacer{flex:1}
+
+    .tb-btn{
+      padding:6px 13px;border-radius:7px;font-size:13px;font-weight:600;
+      cursor:pointer;border:none;white-space:nowrap;transition:opacity .15s,background .15s
+    }
+    .tb-btn.ghost{background:rgba(255,255,255,.07);color:#a0aec0}
+    .tb-btn.ghost:hover{background:rgba(255,255,255,.13);color:#fff}
+    .tb-btn.teal{background:linear-gradient(135deg,#4ECDC4,#45B7D1);color:#0f1117}
+    .tb-btn.teal:hover{opacity:.88}
+    .tb-btn.danger{background:rgba(252,129,129,.12);color:#fc8181;border:1px solid rgba(252,129,129,.2)}
+    .tb-btn.danger:hover{background:rgba(252,129,129,.22)}
+
+    /* User badge */
+    #userBadge{
+      display:flex;align-items:center;gap:7px;padding:5px 12px;
+      background:rgba(255,255,255,.05);border:1px solid #2d3748;border-radius:20px;
+      font-size:13px;color:#a0aec0;cursor:default
+    }
+    #userBadge .dot{width:7px;height:7px;border-radius:50%;background:#4ECDC4;flex-shrink:0}
+
+    /* Export dropdown */
+    .dropdown{position:relative}
+    .dropdown-menu{
+      display:none;position:absolute;top:calc(100% + 6px);left:0;
+      background:#1a1f2e;border:1px solid #2d3748;border-radius:8px;
+      min-width:130px;z-index:9999;overflow:hidden
+    }
+    .dropdown:hover .dropdown-menu{display:block}
+    .dropdown-menu button{
+      display:block;width:100%;padding:9px 14px;text-align:left;
+      background:none;color:#a0aec0;border:none;font-size:13px;font-weight:500;cursor:pointer;
+      border-radius:0
+    }
+    .dropdown-menu button:hover{background:rgba(78,205,196,.1);color:#4ECDC4;transform:none}
+
+    /* ── Side panel ──────────────────────────────────────────── */
+    #controls{
+      position:absolute;top:68px;left:16px;
+      background:rgba(26,31,46,.92);backdrop-filter:blur(10px);
+      padding:14px;border-radius:10px;border:1px solid #2d3748;
+      min-width:205px;z-index:100
+    }
+    .sec-label{font-size:11px;color:#4a5568;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:700}
+    .btn-group{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+    button{
+      padding:7px 12px;background:#4ECDC4;border:none;border-radius:6px;
+      color:#1a1a2e;font-weight:600;cursor:pointer;font-size:13px;transition:opacity .12s,transform .1s
+    }
+    button:hover{opacity:.88}
+    button:active{transform:scale(.97)}
+    button.ghost{background:rgba(255,255,255,.08);color:#a0aec0}
+    button.danger{background:rgba(252,129,129,.13);color:#fc8181;border:1px solid rgba(252,129,129,.22)}
+
+    #status{
+      margin-top:8px;padding:7px 11px;border-radius:6px;font-size:12px;
+      border-left:3px solid #4ECDC4;background:rgba(78,205,196,.07);color:#4ECDC4
+    }
+    #status.disconnected{border-left-color:#fc8181;background:rgba(252,129,129,.07);color:#fc8181}
+
+    #users{margin-top:10px}
+    #users h3{font-size:11px;color:#718096;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+    .user-item{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:12px;color:#a0aec0}
+    .user-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+    #selected-info{margin-top:10px;padding:9px;background:rgba(255,255,255,.04);border-radius:6px;font-size:12px;display:none}
+    #selected-info h3{font-size:12px;margin-bottom:6px;color:#4ECDC4;font-weight:700}
+    .info-row{display:flex;justify-content:space-between;margin-bottom:3px}
+    .info-label{color:#718096}
+
+    .helper{margin-top:10px;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:6px;font-size:11px;color:#718096;line-height:1.75}
+
+    /* ── Cursors ──────────────────────────────────────────────── */
+    .cursor{position:fixed;width:14px;height:14px;border-radius:50%;pointer-events:none;z-index:99;border:2px solid #fff;transform:translate(-50%,-50%)}
+    .cursor-label{position:absolute;top:18px;left:0;background:rgba(0,0,0,.7);padding:2px 6px;border-radius:4px;font-size:10px;white-space:nowrap}
+  </style>
+</head>
+<body>
+<div id="canvas-container"></div>
+
+<!-- Top Bar -->
+<div id="topbar">
+  <a class="tb-logo" href="/pages/lobby.html">🎨 Collab3D</a>
+
+  <div class="tb-divider"></div>
+
+  <div id="roomBadge" style="display:flex;align-items:center;gap:8px;padding:5px 12px;background:rgba(78,205,196,.08);border:1px solid rgba(78,205,196,.2);border-radius:8px;cursor:pointer" onclick="copyRoomLink()" title="Click to copy invite link">
+    <span style="font-size:11px;color:#718096;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Room</span>
+    <span id="roomCodeDisplay" style="font-size:13px;color:#4ECDC4;font-family:monospace;font-weight:700">—</span>
+    <span style="font-size:11px;color:#718096">📋 Copy link</span>
+  </div>
+
+  <div class="tb-divider"></div>
+
+  <button class="tb-btn ghost" onclick="location.href='/pages/library.html'">📚 Library</button>
+
+  <div class="dropdown">
+    <button class="tb-btn ghost">⬇ Export ▾</button>
+    <div class="dropdown-menu">
+      <button onclick="window.app?.exportScene('json')">JSON</button>
+      <button onclick="window.app?.exportScene('gltf')">GLTF</button>
+      <button onclick="window.app?.exportScene('obj')">OBJ</button>
+    </div>
+  </div>
+
+  <button class="tb-btn teal" onclick="window.app?.publishScene()">🚀 Publish</button>
+
+  <div class="tb-spacer"></div>
+
+  <button class="tb-btn ghost" id="btnHistory">⏱ History</button>
+  <button class="tb-btn ghost" id="btnGesture" title="Hand gesture control">🖐 Gesture</button>
+
+  <div id="userBadge">
+    <div class="dot"></div>
+    <span id="topbarUsername">Loading…</span>
+  </div>
+
+  <button class="tb-btn danger" id="btnSignOut" onclick="signOut()">Sign Out</button>
+</div>
+
+<!-- Side Panel -->
+<div id="controls">
+  <div class="sec-label">Add object</div>
+  <div class="btn-group">
+    <button onclick="window.app?.addCube()">＋ Cube</button>
+    <button onclick="window.app?.addSphere()">＋ Sphere</button>
+    <button onclick="window.app?.addCylinder()">＋ Cyl</button>
+  </div>
+
+  <div class="sec-label">Edit</div>
+  <div class="btn-group">
+    <button class="ghost" onclick="window.app?.undo()">↩ Undo</button>
+    <button class="ghost" onclick="window.app?.redo()">↪ Redo</button>
+    <button class="danger" onclick="window.app?.deleteSelected()">🗑 Delete</button>
+  </div>
+
+  <div id="status" class="disconnected">Connecting…</div>
+
+  <div id="users">
+    <h3>Active users</h3>
+    <div id="user-list"></div>
+  </div>
+
+  <div id="selected-info">
+    <h3>Selected object</h3>
+    <div id="selected-details"></div>
+  </div>
+
+  <div class="helper">
+    Click → select<br>
+    Drag → move object<br>
+    Q / E → rotate Y<br>
+    W / S → scale<br>
+    Del → delete<br>
+    Ctrl+Z → undo
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+  // ── Auth guard — redirect to login if not signed in ──────────────────
+  const token = localStorage.getItem('token');
+  const user  = JSON.parse(localStorage.getItem('user') || 'null');
+
+  if (!token || !user) {
+    location.replace('/pages/login.html?redirect=/editor.html');
+  }
+
+  // ── Set API / WS URLs ─────────────────────────────────────────────────
+  const host = location.hostname;
+  const proto = location.protocol;
+  // On production (port 443 via CloudFront) no port needed.
+  // On local dev port 8080 is needed.
+  const port = (location.port === '80' || location.port === '443' || location.port === '') ? '' : ':8080';
+  window.API_URL = `${proto}//${host}${port}/api`;
+  window.WS_URL  = `${proto === 'https:' ? 'wss' : 'ws'}://${host}${port}`;
+
+  // ── Topbar user info ──────────────────────────────────────────────────
+  document.getElementById('topbarUsername').textContent = user?.username || 'You';
+
+  // ── Sign out ──────────────────────────────────────────────────────────
+  window.signOut = function() {
+    if (!confirm('Sign out?')) return;
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    location.href = '/pages/login.html';
+  };
+
+  // ── History panel ─────────────────────────────────────────────────────
+  document.getElementById('btnHistory')?.addEventListener('click', () => {
+    window.app?.historyPanel?.toggle();
+  });
+
+  // ── Gesture controller (lazy loaded) ─────────────────────────────────
+  let gestureCtrl = null;
+  document.getElementById('btnGesture')?.addEventListener('click', async () => {
+    if (!gestureCtrl) {
+      const { GestureController } = await import('./js/gestureController.js');
+      gestureCtrl = new GestureController(window.app);
+    }
+    gestureCtrl.toggle();
+    const btn = document.getElementById('btnGesture');
+    const on  = gestureCtrl.active;
+    btn.style.color       = on ? '#4ECDC4' : '';
+    btn.style.borderColor = on ? 'rgba(78,205,196,.4)' : '';
+    btn.textContent       = on ? '🖐 Gesture ON' : '🖐 Gesture';
+  });
+
+  // ── Show room code in topbar ─────────────────────────────────────────
+  const sceneId = new URLSearchParams(location.search).get('scene') || 'default-scene';
+  document.getElementById('roomCodeDisplay').textContent = sceneId;
+
+  // ── Copy room invite link ─────────────────────────────────────────────
+  window.copyRoomLink = function() {
+    const link = `${location.origin}/editor.html?scene=${encodeURIComponent(sceneId)}`;
+    navigator.clipboard.writeText(link).then(() => {
+      const badge = document.getElementById('roomBadge');
+      const orig  = badge.innerHTML;
+      badge.style.borderColor = '#4ECDC4';
+      badge.querySelectorAll('span')[2].textContent = '✅ Copied!';
+      setTimeout(() => {
+        badge.style.borderColor = '';
+        badge.querySelectorAll('span')[2].textContent = '📋 Copy link';
+      }, 2000);
+    });
+  };
+
+  // ── Save this room to recent list ─────────────────────────────────────
+  if (sceneId !== 'default-scene') {
+    const rooms = JSON.parse(localStorage.getItem('recentRooms') || '[]').filter(r => r.code !== sceneId);
+    rooms.unshift({ code: sceneId, name: sceneId, ts: Date.now() });
+    localStorage.setItem('recentRooms', JSON.stringify(rooms.slice(0, 10)));
+  }
+
+  // ── Load the editor ───────────────────────────────────────────────────
+  await import('./client.js');
+</script>
+</body>
+</html>

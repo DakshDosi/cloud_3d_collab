@@ -85,7 +85,7 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="spin"></span>Signing in…';
 
-    const redirect = new URLSearchParams(location.search).get('redirect') || '/index.html';
+    const redirect = new URLSearchParams(location.search).get('redirect') || '/pages/lobby.html';
 
     try {
       // Try login first
@@ -127,7 +127,7 @@
 
   // Already logged in
   if (localStorage.getItem('token')) {
-    location.href = new URLSearchParams(location.search).get('redirect') || '/index.html';
+    location.href = new URLSearchParams(location.search).get('redirect') || '/pages/lobby.html';
   }
 </script>
 </body>

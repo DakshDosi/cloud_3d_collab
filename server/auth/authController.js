@@ -40,7 +40,7 @@ export async function register(req, res, next) {
 
     await sendWelcomeEmail(user.email, user.username).catch(() => {}); // non-blocking
 
-    const token = signAccessToken({ userId: user.id, username: user.username, email: user.email });
+    const token = signAccessToken({ id: user.id, username: user.username, email: user.email });
 
     res.status(201).json({ token, user });
   } catch (err) {
@@ -67,7 +67,7 @@ export async function login(req, res, next) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = signAccessToken({ userId: user.id, username: user.username, email: user.email });
+    const token = signAccessToken({ id: user.id, username: user.username, email: user.email });
 
     res.json({
       token,

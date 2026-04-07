@@ -12,10 +12,28 @@ const router = express.Router();
 router.post("/", requireAuth, async (req, res) => {
   try {
     const scene = await sceneService.createScene(
-      req.user.id,
-      req.body.name || "Untitled Scene"
+      req.user.userId || req.user.id,
+      { name: req.body.name || "Untitled Scene" }
     );
 
+    res.json(scene);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ---------------- ENSURE SCENE ---------------- */
+
+router.post("/ensure", requireAuth, async (req, res) => {
+  try {
+    const { sceneId, name, snapshot } = req.body;
+    let scene = await sceneService.getScene(sceneId);
+    if (!scene) {
+      scene = await sceneService.createSceneWithId(sceneId, req.user.userId || req.user.id, { name: name || sceneId, description: "" });
+    }
+    if (snapshot) {
+      await sceneService.persistSnapshot(sceneId, snapshot, snapshot.vectorClock || {}, 0);
+    }
     res.json(scene);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -82,17 +100,18 @@ router.post("/:sceneId/restore/:versionId", requireAuth, async (req, res) => {
 
 /* ---------------- EXPORT SCENE ---------------- */
 
-router.get("/:id/export/:format", async (req, res) => {
+router.post("/:id/export", requireAuth, async (req, res) => {
   try {
+    const format = req.body.format || "json";
     const scene = await sceneService.getScene(req.params.id);
 
     const file = await storageService.saveExport(
       req.params.id,
-      req.params.format,
+      format,
       scene
     );
 
-    res.json({ file });
+    res.json({ url: `/${file}` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

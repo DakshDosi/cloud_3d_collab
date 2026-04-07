@@ -508,16 +508,67 @@ class CollaborativeEditor {
     }
   }
 
+  async _promptModal(titleText, defaultText = '', optional = false) {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;backdrop-filter:blur(3px);';
+      const box = document.createElement('div');
+      box.style.cssText = 'background:#1a1f2e;padding:24px;border-radius:12px;width:320px;border:1px solid #2d3748;box-shadow:0 20px 40px rgba(0,0,0,0.4);font-family:sans-serif;color:#e2e8f0;';
+      
+      const header = document.createElement('h3');
+      header.textContent = titleText;
+      header.style.cssText = 'margin:0 0 16px 0;font-size:16px;font-weight:700;color:#fff;';
+      
+      const input = document.createElement('input');
+      input.type = 'text'; input.value = defaultText;
+      input.placeholder = optional ? 'Optional' : 'Required';
+      input.style.cssText = 'width:100%;padding:10px 12px;background:#0f1117;border:1px solid #2d3748;border-radius:6px;color:#fff;outline:none;font-size:14px;box-sizing:border-box;margin-bottom:20px;';
+      input.onfocus = () => input.style.borderColor = '#4ECDC4';
+      input.onblur = () => input.style.borderColor = '#2d3748';
+      
+      const btnRow = document.createElement('div');
+      btnRow.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;';
+      
+      const btnCancel = document.createElement('button');
+      btnCancel.textContent = 'Cancel';
+      btnCancel.style.cssText = 'padding:8px 16px;background:transparent;border:none;color:#a0aec0;cursor:pointer;font-weight:600;font-size:14px;border-radius:6px;transition:0.2s;';
+      btnCancel.onmouseover = () => btnCancel.style.color = '#fff';
+      btnCancel.onmouseout = () => btnCancel.style.color = '#a0aec0';
+      
+      const btnOk = document.createElement('button');
+      btnOk.textContent = 'Continue';
+      btnOk.style.cssText = 'padding:8px 16px;background:linear-gradient(135deg, #4ECDC4, #45B7D1);border:none;color:#0f1117;cursor:pointer;font-weight:700;font-size:14px;border-radius:6px;transition:opacity 0.2s;';
+      btnOk.onmouseover = () => btnOk.style.opacity = '0.85';
+      btnOk.onmouseout = () => btnOk.style.opacity = '1';
+      
+      const cleanup = (val) => { document.body.removeChild(overlay); resolve(val); };
+      btnCancel.onclick = () => cleanup(null);
+      btnOk.onclick = () => cleanup(input.value);
+      input.onkeydown = e => { if (e.key === 'Enter') btnOk.click(); if (e.key === 'Escape') btnCancel.click(); };
+      
+      btnRow.appendChild(btnCancel); btnRow.appendChild(btnOk);
+      box.appendChild(header); box.appendChild(input); box.appendChild(btnRow);
+      overlay.appendChild(box); document.body.appendChild(overlay);
+      input.select();
+    });
+  }
+
   async publishScene() {
     const token = getToken();
     if (!token) { alert('Sign in to publish.'); return; }
-    const title = prompt('Model title:', 'My Scene'); if (!title) return;
-    const description = prompt('Description (optional):', '') ?? '';
+    
+    const title = await this._promptModal('Enter model title:', 'My Scene');
+    if (!title) return;
+    
+    const description = await this._promptModal('Enter description:', '', true);
+    if (description === null) return;
+    
     try {
       const ensureRes  = await authPost('/scenes/ensure', { sceneId: this.sceneId, name: title, snapshot: this._buildSnapshot() });
       const ensureData = await ensureRes.json();
       if (!ensureRes.ok) throw new Error(ensureData.error || 'Could not save scene');
-      const pubRes  = await authPost('/models', { sceneId: this.sceneId, title, description: description || undefined, tags: [] });
+      
+      const pubRes  = await authPost('/models', { sceneId: this.sceneId, title, description, tags: [] });
       const pubData = await pubRes.json();
       if (!pubRes.ok) throw new Error(pubData.error);
       alert(`✅ Published "${pubData.model.title}" to the library!`);
@@ -537,7 +588,7 @@ class CollaborativeEditor {
       const res  = await authPost(`/scenes/${this.sceneId}/export`, { format });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      window.open(data.url, '_blank');
+      window.open(API_URL.replace('/api', '') + data.url, '_blank');
     } catch (err) { alert(`Export failed: ${err.message}`); }
   }
 

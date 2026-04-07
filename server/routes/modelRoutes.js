@@ -34,7 +34,7 @@
 // server/routes/modelRoutes.js
 
 import { Router } from 'express';
-import { requireAuth } from '../auth/authMiddleware.js';
+import { requireAuth, optionalAuth } from '../auth/authMiddleware.js';
 import prisma from '../db/client.js';
 import {
   listPublicModels, getModel, publishModel, unpublishModel,
@@ -44,43 +44,43 @@ import {
 const router = Router();
 
 // GET /models — browse public library
-// router.get('/', optionalAuth, async (req, res, next) => {
-//   try {
-//     const { limit = 24, offset = 0, search, tag, sort } = req.query;
-//     const result = await listPublicModels({
-//       limit: parseInt(limit), offset: parseInt(offset),
-//       search, tag, sortBy: sort
-//     });
+router.get('/', optionalAuth, async (req, res, next) => {
+  try {
+    const { limit = 24, offset = 0, search, tag, sort } = req.query;
+    const result = await listPublicModels({
+      limit: parseInt(limit), offset: parseInt(offset),
+      search, tag, sortBy: sort
+    });
 
-//     // Attach _liked status for the requesting user
-//     if (req.user?.userId && result.models.length) {
-//       const userId = req.user.userId;
-//       const modelIds = result.models.map(m => m.id);
-//       const likes = await prisma.modelLike.findMany({
-//         where: { userId, modelId: { in: modelIds } },
-//         select: { modelId: true }
-//       });
-//       const likedSet = new Set(likes.map(l => l.modelId));
-//       result.models = result.models.map(m => ({ ...m, _liked: likedSet.has(m.id) }));
-//     } else {
-//       result.models = result.models.map(m => ({ ...m, _liked: false }));
-//     }
+    // Attach _liked status for the requesting user
+    if (req.user?.userId && result.models.length) {
+      const userId = req.user.userId;
+      const modelIds = result.models.map(m => m.id);
+      const likes = await prisma.modelLike.findMany({
+        where: { userId, modelId: { in: modelIds } },
+        select: { modelId: true }
+      });
+      const likedSet = new Set(likes.map(l => l.modelId));
+      result.models = result.models.map(m => ({ ...m, _liked: likedSet.has(m.id) }));
+    } else {
+      result.models = result.models.map(m => ({ ...m, _liked: false }));
+    }
 
-//     res.json(result);
-//   } catch (err) { next(err); }
-// });
+    res.json(result);
+  } catch (err) { next(err); }
+});
 
-// // GET /models/:id — single model detail
-// router.get('/:id', optionalAuth, async (req, res, next) => {
-//   try {
-//     const model = await getModel(req.params.id);
-//     if (!model || (!model.isPublic && model.ownerId !== req.user?.userId)) {
-//       return res.status(404).json({ error: 'Model not found' });
-//     }
-//     const liked = await getLikeStatus(req.params.id, req.user?.userId);
-//     res.json({ model, liked });
-//   } catch (err) { next(err); }
-// });
+// GET /models/:id — single model detail
+router.get('/:id', optionalAuth, async (req, res, next) => {
+  try {
+    const model = await getModel(req.params.id);
+    if (!model || (!model.isPublic && model.ownerId !== req.user?.userId)) {
+      return res.status(404).json({ error: 'Model not found' });
+    }
+    const liked = await getLikeStatus(req.params.id, req.user?.userId);
+    res.json({ model, liked });
+  } catch (err) { next(err); }
+});
 
 // POST /models — publish scene as model
 router.post('/', requireAuth, async (req, res, next) => {

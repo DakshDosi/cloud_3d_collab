@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Collab3D — Rooms</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+
+    /* Nav */
+    nav{display:flex;align-items:center;gap:12px;padding:0 24px;height:54px;background:rgba(26,31,46,.95);backdrop-filter:blur(12px);border-bottom:1px solid #2d3748;position:sticky;top:0;z-index:100}
+    .nav-logo{font-size:17px;font-weight:800;color:#4ECDC4;text-decoration:none}
+    .nav-spacer{flex:1}
+    .nav-user{font-size:13px;color:#a0aec0}
+    .nav-btn{padding:6px 14px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:rgba(255,255,255,.07);color:#a0aec0;text-decoration:none}
+    .nav-btn:hover{background:rgba(255,255,255,.13);color:#fff}
+
+    /* Hero */
+    .hero{padding:52px 24px 36px;text-align:center;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(78,205,196,.07) 0%,transparent 70%)}
+    .hero h1{font-size:clamp(24px,4vw,36px);font-weight:800;color:#fff}
+    .hero p{color:#718096;margin-top:8px;font-size:15px}
+
+    /* Main grid */
+    .main{max-width:860px;margin:0 auto;padding:0 24px 48px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    @media(max-width:600px){.main{grid-template-columns:1fr}}
+
+    /* Cards */
+    .card{background:#1a1f2e;border:1px solid #2d3748;border-radius:14px;padding:28px}
+    .card h2{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
+    .card p{font-size:13px;color:#718096;line-height:1.6;margin-bottom:20px}
+
+    label{display:block;font-size:12px;font-weight:600;color:#a0aec0;margin-bottom:6px}
+    input{width:100%;padding:11px 14px;background:#0f1117;border:1px solid #2d3748;border-radius:8px;color:#e2e8f0;font-size:14px;outline:none;transition:border-color .15s,box-shadow .15s;margin-bottom:12px}
+    input:focus{border-color:#4ECDC4;box-shadow:0 0 0 3px rgba(78,205,196,.15)}
+    input::placeholder{color:#4a5568}
+
+    .btn{width:100%;padding:11px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s}
+    .btn:hover{opacity:.88}
+    .btn.teal{background:linear-gradient(135deg,#4ECDC4,#45B7D1);color:#0f1117}
+    .btn.ghost{background:rgba(255,255,255,.08);color:#e2e8f0}
+
+    /* Recent rooms */
+    .recent-section{max-width:860px;margin:0 auto;padding:0 24px 48px}
+    .recent-section h2{font-size:15px;font-weight:700;color:#fff;margin-bottom:14px}
+    .room-list{display:flex;flex-direction:column;gap:10px}
+    .room-row{
+      display:flex;align-items:center;gap:14px;padding:13px 16px;
+      background:#1a1f2e;border:1px solid #2d3748;border-radius:10px;
+      cursor:pointer;transition:border-color .15s
+    }
+    .room-row:hover{border-color:#4ECDC4}
+    .room-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#4ECDC4,#45B7D1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .room-info{flex:1;min-width:0}
+    .room-name{font-size:14px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .room-code{font-size:12px;color:#718096;font-family:monospace;margin-top:2px}
+    .room-arrow{color:#4a5568;font-size:16px}
+
+    .empty-rooms{text-align:center;padding:32px;color:#4a5568;font-size:13px;background:#1a1f2e;border:1px dashed #2d3748;border-radius:10px}
+
+    .spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(0,0,0,.2);border-top-color:#0f1117;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">🎨 Collab3D</a>
+  <div class="nav-spacer"></div>
+  <span class="nav-user" id="navUser"></span>
+  <button class="nav-btn" onclick="signOut()">Sign Out</button>
+</nav>
+
+<div class="hero">
+  <h1>Your Rooms</h1>
+  <p>Create a room, share the code — everyone joins the same scene in real time.</p>
+</div>
+
+<div class="main">
+  <!-- Create new room -->
+  <div class="card">
+    <h2>Create a new room</h2>
+    <p>Start a fresh 3D scene. Share the room code with anyone to collaborate instantly.</p>
+    <label for="roomName">Room name (optional)</label>
+    <input type="text" id="roomName" placeholder="My awesome scene" maxlength="40"/>
+    <button class="btn teal" id="createBtn" onclick="createRoom()">Create Room</button>
+  </div>
+
+  <!-- Join existing room -->
+  <div class="card">
+    <h2>Join a room</h2>
+    <p>Got a room code from someone? Enter it below to jump into their scene.</p>
+    <label for="joinCode">Room code</label>
+    <input type="text" id="joinCode" placeholder="e.g. abc-1234" maxlength="20" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"/>
+    <button class="btn ghost" onclick="joinRoom()">Join Room</button>
+  </div>
+</div>
+
+<!-- Recent rooms -->
+<div class="recent-section">
+  <h2>Recent rooms</h2>
+  <div class="room-list" id="roomList">
+    <div class="empty-rooms">No recent rooms. Create one above to get started.</div>
+  </div>
+</div>
+
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!localStorage.getItem('token') || !user) {
+    location.replace('/pages/login.html?redirect=/pages/lobby.html');
+  }
+  document.getElementById('navUser').textContent = '@' + (user?.username || '');
+
+  function signOut() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    location.href = '/pages/login.html';
+  }
+
+  // ── Room code generator ───────────────────────────────────────────────
+  function makeCode() {
+    const adj  = ['fast','cool','wild','bold','soft','warm','keen','calm','bright','sharp'];
+    const noun = ['fox','owl','star','tree','wave','leaf','wolf','fish','rock','moon'];
+    const num  = Math.floor(Math.random() * 9000 + 1000);
+    return `${adj[Math.floor(Math.random()*adj.length)]}-${noun[Math.floor(Math.random()*noun.length)]}-${num}`;
+  }
+
+  // ── Recent rooms (stored in localStorage) ────────────────────────────
+  function getRecent() {
+    return JSON.parse(localStorage.getItem('recentRooms') || '[]');
+  }
+
+  function saveRecent(code, name) {
+    const rooms = getRecent().filter(r => r.code !== code);
+    rooms.unshift({ code, name: name || code, ts: Date.now() });
+    localStorage.setItem('recentRooms', JSON.stringify(rooms.slice(0, 10)));
+  }
+
+  function renderRecent() {
+    const rooms = getRecent();
+    const list  = document.getElementById('roomList');
+    if (!rooms.length) {
+      list.innerHTML = '<div class="empty-rooms">No recent rooms. Create one above to get started.</div>';
+      return;
+    }
+    list.innerHTML = rooms.map(r => `
+      <div class="room-row" onclick="goToRoom('${r.code}', '${r.name}')">
+        <div class="room-icon">🎨</div>
+        <div class="room-info">
+          <div class="room-name">${r.name}</div>
+          <div class="room-code">Room code: ${r.code}</div>
+        </div>
+        <span class="room-arrow">→</span>
+      </div>
+    `).join('');
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────
+  function goToRoom(code, name) {
+    saveRecent(code, name);
+    location.href = `/editor.html?scene=${encodeURIComponent(code)}`;
+  }
+
+  function createRoom() {
+    const name = document.getElementById('roomName').value.trim() || 'Untitled Scene';
+    const code = makeCode();
+    goToRoom(code, name);
+  }
+
+  function joinRoom() {
+    const code = document.getElementById('joinCode').value.trim();
+    if (!code) { alert('Please enter a room code.'); return; }
+    goToRoom(code, code);
+  }
+
+  // Enter key on join input
+  document.getElementById('joinCode').addEventListener('keydown', e => {
+    if (e.key === 'Enter') joinRoom();
+  });
+
+  renderRecent();
+</script>
+</body>
+</html>
