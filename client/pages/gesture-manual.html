@@ -1,221 +1,497 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Gesture Manual — Collab3D</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gesture Manual — Sculpt</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; }
-    nav { position: sticky; top: 0; z-index: 100; background: rgba(26,31,46,.95); backdrop-filter: blur(12px); border-bottom: 1px solid #2d3748; display: flex; align-items: center; gap: 16px; padding: 0 24px; height: 56px; }
-    .logo { font-size: 17px; font-weight: 800; color: #4ECDC4; text-decoration: none; }
-    nav .spacer { flex: 1; }
-    .back { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; background: rgba(255,255,255,.07); color: #a0aec0; text-decoration: none; border: 1px solid #2d3748; }
-    .back:hover { color: #fff; border-color: #4ECDC4; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-    .hero { padding: 52px 24px 32px; text-align: center; background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(78,205,196,.07) 0%, transparent 70%); }
-    .hero h1 { font-size: clamp(24px,4vw,38px); font-weight: 800; color: #fff; }
-    .hero p  { color: #718096; margin-top: 10px; font-size: 15px; max-width: 520px; margin-inline: auto; line-height: 1.6; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
 
-    .badge { display: inline-block; margin-top: 16px; padding: 5px 14px; background: rgba(78,205,196,.12); border: 1px solid rgba(78,205,196,.3); border-radius: 20px; font-size: 12px; color: #4ECDC4; font-weight: 600; }
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(26, 31, 46, .95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 24px;
+      height: 56px;
+    }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1100px; margin: 32px auto; padding: 0 24px; }
+    .logo {
+      font-size: 17px;
+      font-weight: 800;
+      color: #4ECDC4;
+      text-decoration: none;
+    }
 
-    .card { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 14px; overflow: hidden; transition: border-color .15s, transform .15s; }
-    .card:hover { border-color: #4ECDC4; transform: translateY(-2px); }
+    nav .spacer {
+      flex: 1;
+    }
 
-    .card-top { padding: 28px 24px 20px; display: flex; align-items: flex-start; gap: 18px; }
-    .emoji-box { width: 64px; height: 64px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 32px; flex-shrink: 0; }
-    .card-top .info h2 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 5px; }
-    .card-top .info .how { font-size: 13px; color: #718096; line-height: 1.5; }
-    .card-top .info .trigger { margin-top: 6px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #4a5568; }
+    .back {
+      padding: 7px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, .07);
+      color: #a0aec0;
+      text-decoration: none;
+      border: 1px solid #2d3748;
+    }
 
-    .card-bottom { border-top: 1px solid #2d3748; padding: 14px 24px; background: rgba(0,0,0,.15); }
-    .card-bottom p { font-size: 12px; color: #a0aec0; line-height: 1.6; }
+    .back:hover {
+      color: #fff;
+      border-color: #4ECDC4;
+    }
 
-    .cat-select   { background: rgba(78,205,196,.08); border-color: rgba(78,205,196,.25); }
-    .cat-nav      { background: rgba(78,205,196,.08); border-color: rgba(78,205,196,.25); }
-    .cat-create   { background: rgba(154,230,180,.08); border-color: rgba(154,230,180,.2); }
-    .cat-delete   { background: rgba(252,129,129,.08); border-color: rgba(252,129,129,.2); }
-    .cat-transform { background: rgba(246,173,85,.08); border-color: rgba(246,173,85,.2); }
+    .hero {
+      padding: 52px 24px 32px;
+      text-align: center;
+      background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(78, 205, 196, .07) 0%, transparent 70%);
+    }
 
-    .emoji-select   { background: rgba(78,205,196,.15); }
-    .emoji-nav      { background: rgba(78,205,196,.1);  }
-    .emoji-create   { background: rgba(154,230,180,.15);}
-    .emoji-delete   { background: rgba(252,129,129,.15);}
-    .emoji-transform { background: rgba(246,173,85,.15); }
+    .hero h1 {
+      font-size: clamp(24px, 4vw, 38px);
+      font-weight: 800;
+      color: #fff;
+    }
 
-    .tag { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 700; margin-top: 8px; }
-    .tag-select    { background: rgba(78,205,196,.15);   color: #4ECDC4; }
-    .tag-nav       { background: rgba(78,205,196,.1);    color: #45B7D1; }
-    .tag-transform { background: rgba(246,173,85,.15);   color: #F6AD55; }
-    .tag-delete    { background: rgba(252,129,129,.15);  color: #fc8181; }
-    .tag-create    { background: rgba(154,230,180,.15);  color: #68D391; }
+    .hero p {
+      color: #718096;
+      margin-top: 10px;
+      font-size: 15px;
+      max-width: 520px;
+      margin-inline: auto;
+      line-height: 1.6;
+    }
 
-    .tips { max-width: 900px; margin: 0 auto 48px; padding: 0 24px; }
-    .tips h2 { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 16px; }
-    .tip-list { display: flex; flex-direction: column; gap: 12px; }
-    .tip { display: flex; align-items: flex-start; gap: 14px; padding: 14px 18px; background: #1a1f2e; border: 1px solid #2d3748; border-radius: 10px; }
-    .tip-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
-    .tip p { font-size: 13px; color: #a0aec0; line-height: 1.6; }
-    .tip strong { color: #e2e8f0; }
+    .badge {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 5px 14px;
+      background: rgba(78, 205, 196, .12);
+      border: 1px solid rgba(78, 205, 196, .3);
+      border-radius: 20px;
+      font-size: 12px;
+      color: #4ECDC4;
+      font-weight: 600;
+    }
 
-    .launch { text-align: center; margin-bottom: 56px; }
-    .launch-btn { display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #4ECDC4, #45B7D1); border-radius: 10px; color: #0f1117; font-size: 15px; font-weight: 700; text-decoration: none; transition: opacity .15s; }
-    .launch-btn:hover { opacity: .88; }
-    .launch p { margin-top: 10px; font-size: 13px; color: #718096; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+
+    .card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color .15s, transform .15s;
+    }
+
+    .card:hover {
+      border-color: #4ECDC4;
+      transform: translateY(-2px);
+    }
+
+    .card-top {
+      padding: 28px 24px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+    }
+
+    .emoji-box {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+
+    .card-top .info h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 5px;
+    }
+
+    .card-top .info .how {
+      font-size: 13px;
+      color: #718096;
+      line-height: 1.5;
+    }
+
+    .card-top .info .trigger {
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: #4a5568;
+    }
+
+    .card-bottom {
+      border-top: 1px solid #2d3748;
+      padding: 14px 24px;
+      background: rgba(0, 0, 0, .15);
+    }
+
+    .card-bottom p {
+      font-size: 12px;
+      color: #a0aec0;
+      line-height: 1.6;
+    }
+
+    .cat-select {
+      background: rgba(78, 205, 196, .08);
+      border-color: rgba(78, 205, 196, .25);
+    }
+
+    .cat-nav {
+      background: rgba(78, 205, 196, .08);
+      border-color: rgba(78, 205, 196, .25);
+    }
+
+    .cat-create {
+      background: rgba(154, 230, 180, .08);
+      border-color: rgba(154, 230, 180, .2);
+    }
+
+    .cat-delete {
+      background: rgba(252, 129, 129, .08);
+      border-color: rgba(252, 129, 129, .2);
+    }
+
+    .cat-transform {
+      background: rgba(246, 173, 85, .08);
+      border-color: rgba(246, 173, 85, .2);
+    }
+
+    .emoji-select {
+      background: rgba(78, 205, 196, .15);
+    }
+
+    .emoji-nav {
+      background: rgba(78, 205, 196, .1);
+    }
+
+    .emoji-create {
+      background: rgba(154, 230, 180, .15);
+    }
+
+    .emoji-delete {
+      background: rgba(252, 129, 129, .15);
+    }
+
+    .emoji-transform {
+      background: rgba(246, 173, 85, .15);
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .tag-select {
+      background: rgba(78, 205, 196, .15);
+      color: #4ECDC4;
+    }
+
+    .tag-nav {
+      background: rgba(78, 205, 196, .1);
+      color: #45B7D1;
+    }
+
+    .tag-transform {
+      background: rgba(246, 173, 85, .15);
+      color: #F6AD55;
+    }
+
+    .tag-delete {
+      background: rgba(252, 129, 129, .15);
+      color: #fc8181;
+    }
+
+    .tag-create {
+      background: rgba(154, 230, 180, .15);
+      color: #68D391;
+    }
+
+    .tips {
+      max-width: 900px;
+      margin: 0 auto 48px;
+      padding: 0 24px;
+    }
+
+    .tips h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .tip-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 18px;
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+    }
+
+    .tip-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .tip p {
+      font-size: 13px;
+      color: #a0aec0;
+      line-height: 1.6;
+    }
+
+    .tip strong {
+      color: #e2e8f0;
+    }
+
+    .launch {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .launch-btn {
+      display: inline-block;
+      padding: 14px 36px;
+      background: linear-gradient(135deg, #4ECDC4, #45B7D1);
+      border-radius: 10px;
+      color: #0f1117;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: opacity .15s;
+    }
+
+    .launch-btn:hover {
+      opacity: .88;
+    }
+
+    .launch p {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #718096;
+    }
   </style>
 </head>
+
 <body>
 
-<nav>
-  <a class="logo" href="/">🎨 Collab3D</a>
-  <div class="spacer"></div>
-  <a class="back" href="/">← Back to editor</a>
-</nav>
+  <nav>
+    <a class="logo" href="/">🎨 Sculpt</a>
+    <div class="spacer"></div>
+    <a class="back" href="/">← Back to editor</a>
+  </nav>
 
-<div class="hero">
-  <h1>Hand Gesture Manual</h1>
-  <p>Control the 3D editor with your hands. One hand works as a cursor, gestures trigger actions. No mouse needed.</p>
-  <span class="badge">📷 Webcam required · MediaPipe Hands · Phase 1</span>
-</div>
+  <div class="hero">
+    <h1>Hand Gesture Manual</h1>
+    <p>Control the 3D editor with your hands. One hand works as a cursor, gestures trigger actions. No mouse needed.</p>
+    <span class="badge">📷 Webcam required · MediaPipe Hands · Phase 1</span>
+  </div>
 
-<div class="grid">
+  <div class="grid">
 
-  <!-- Open Palm -->
-  <div class="card cat-nav">
-    <div class="card-top">
-      <div class="emoji-box emoji-nav">🖐</div>
-      <div class="info">
-        <div class="trigger">Navigate</div>
-        <h2>Open palm</h2>
-        <div class="how">All five fingers extended and spread. Your wrist position maps to the canvas like a mouse cursor.</div>
-        <span class="tag tag-nav">Cursor move</span>
+    <!-- Open Palm -->
+    <div class="card cat-nav">
+      <div class="card-top">
+        <div class="emoji-box emoji-nav">🖐</div>
+        <div class="info">
+          <div class="trigger">Navigate</div>
+          <h2>Open palm</h2>
+          <div class="how">All five fingers extended and spread. Your wrist position maps to the canvas like a mouse
+            cursor.</div>
+          <span class="tag tag-nav">Cursor move</span>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <p>Move your open hand around to position the cursor. If you already have an object grabbed, moving your palm
+          drags it across the ground plane.</p>
       </div>
     </div>
-    <div class="card-bottom">
-      <p>Move your open hand around to position the cursor. If you already have an object grabbed, moving your palm drags it across the ground plane.</p>
-    </div>
-  </div>
 
-  <!-- Pinch -->
-  <div class="card cat-select">
-    <div class="card-top">
-      <div class="emoji-box emoji-select">🤏</div>
-      <div class="info">
-        <div class="trigger">Select</div>
-        <h2>Pinch — index + thumb</h2>
-        <div class="how">Touch your index fingertip to your thumb. The distance threshold is about 6% of frame width.</div>
-        <span class="tag tag-select">Grab / release</span>
+    <!-- Pinch -->
+    <div class="card cat-select">
+      <div class="card-top">
+        <div class="emoji-box emoji-select">🤏</div>
+        <div class="info">
+          <div class="trigger">Select</div>
+          <h2>Pinch — index + thumb</h2>
+          <div class="how">Touch your index fingertip to your thumb. The distance threshold is about 6% of frame width.
+          </div>
+          <span class="tag tag-select">Grab / release</span>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <p><strong>First pinch</strong> clicks the object under your cursor and selects it (highlighted in teal).
+          <strong>Pinch + move</strong> drags the object across the scene. <strong>Release</strong> (open palm) drops
+          it.</p>
       </div>
     </div>
-    <div class="card-bottom">
-      <p><strong>First pinch</strong> clicks the object under your cursor and selects it (highlighted in teal). <strong>Pinch + move</strong> drags the object across the scene. <strong>Release</strong> (open palm) drops it.</p>
-    </div>
-  </div>
 
-  <!-- Fist -->
-  <div class="card cat-transform">
-    <div class="card-top">
-      <div class="emoji-box emoji-transform">✊</div>
-      <div class="info">
-        <div class="trigger">Transform</div>
-        <h2>Fist — all fingers closed</h2>
-        <div class="how">Curl all fingers into a fist. Your wrist's left–right movement rotates the selected object.</div>
-        <span class="tag tag-transform">Rotate Y axis</span>
+    <!-- Fist -->
+    <div class="card cat-transform">
+      <div class="card-top">
+        <div class="emoji-box emoji-transform">✊</div>
+        <div class="info">
+          <div class="trigger">Transform</div>
+          <h2>Fist — all fingers closed</h2>
+          <div class="how">Curl all fingers into a fist. Your wrist's left–right movement rotates the selected object.
+          </div>
+          <span class="tag tag-transform">Rotate Y axis</span>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <p>Select an object first (pinch), then make a fist. Move your wrist left to rotate counterclockwise, right for
+          clockwise. Rotation speed scales with how fast you move.</p>
       </div>
     </div>
-    <div class="card-bottom">
-      <p>Select an object first (pinch), then make a fist. Move your wrist left to rotate counterclockwise, right for clockwise. Rotation speed scales with how fast you move.</p>
-    </div>
-  </div>
 
-  <!-- Two-hand scale -->
-  <div class="card cat-transform">
-    <div class="card-top">
-      <div class="emoji-box emoji-transform" style="font-size:22px;">🤏🤏</div>
-      <div class="info">
-        <div class="trigger">Transform</div>
-        <h2>Two-hand pinch</h2>
-        <div class="how">Both hands in a pinch gesture simultaneously. The distance between your two wrists controls scale.</div>
-        <span class="tag tag-transform">Scale</span>
+    <!-- Two-hand scale -->
+    <div class="card cat-transform">
+      <div class="card-top">
+        <div class="emoji-box emoji-transform" style="font-size:22px;">🤏🤏</div>
+        <div class="info">
+          <div class="trigger">Transform</div>
+          <h2>Two-hand pinch</h2>
+          <div class="how">Both hands in a pinch gesture simultaneously. The distance between your two wrists controls
+            scale.</div>
+          <span class="tag tag-transform">Scale</span>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <p>Select an object first, then bring both hands into the camera view and pinch with both. Move hands apart to
+          scale up, together to scale down. Works proportionally — slow and controlled.</p>
       </div>
     </div>
-    <div class="card-bottom">
-      <p>Select an object first, then bring both hands into the camera view and pinch with both. Move hands apart to scale up, together to scale down. Works proportionally — slow and controlled.</p>
-    </div>
-  </div>
 
-  <!-- Thumbs up -->
-  <div class="card cat-create">
-    <div class="card-top">
-      <div class="emoji-box emoji-create">👍</div>
-      <div class="info">
-        <div class="trigger">Create</div>
-        <h2>Thumbs up</h2>
-        <div class="how">Only your thumb extended, all other fingers closed. Triggers once on gesture entry — not continuously.</div>
-        <span class="tag tag-create">Add cube</span>
+    <!-- Thumbs up -->
+    <div class="card cat-create">
+      <div class="card-top">
+        <div class="emoji-box emoji-create">👍</div>
+        <div class="info">
+          <div class="trigger">Create</div>
+          <h2>Thumbs up</h2>
+          <div class="how">Only your thumb extended, all other fingers closed. Triggers once on gesture entry — not
+            continuously.</div>
+          <span class="tag tag-create">Add cube</span>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <p>Shows a thumbs up → a new cube appears near the centre of your scene with a random colour. The object is
+          added to all connected users' views instantly via CRDT sync.</p>
       </div>
     </div>
-    <div class="card-bottom">
-      <p>Shows a thumbs up → a new cube appears near the centre of your scene with a random colour. The object is added to all connected users' views instantly via CRDT sync.</p>
-    </div>
-  </div>
 
-  <!-- Victory / delete -->
-  <div class="card cat-delete">
-    <div class="card-top">
-      <div class="emoji-box emoji-delete">✌️</div>
-      <div class="info">
-        <div class="trigger">Delete</div>
-        <h2>Victory sign ✌️</h2>
-        <div class="how">Index and middle fingers both extended, others closed. Must hold for 1 second to prevent accidents.</div>
-        <span class="tag tag-delete">Delete selected</span>
+    <!-- Victory / delete -->
+    <div class="card cat-delete">
+      <div class="card-top">
+        <div class="emoji-box emoji-delete">✌️</div>
+        <div class="info">
+          <div class="trigger">Delete</div>
+          <h2>Victory sign ✌️</h2>
+          <div class="how">Index and middle fingers both extended, others closed. Must hold for 1 second to prevent
+            accidents.</div>
+          <span class="tag tag-delete">Delete selected</span>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <p>The HUD shows a countdown: <em>"Deleting… 80%"</em>. Release the gesture before 1 second to cancel. On
+          confirmation, the selected object is deleted and synced to all users.</p>
       </div>
     </div>
-    <div class="card-bottom">
-      <p>The HUD shows a countdown: <em>"Deleting… 80%"</em>. Release the gesture before 1 second to cancel. On confirmation, the selected object is deleted and synced to all users.</p>
+
+  </div>
+
+  <!-- Tips -->
+  <div class="tips">
+    <h2>Tips for best results</h2>
+    <div class="tip-list">
+      <div class="tip">
+        <div class="tip-icon">💡</div>
+        <p><strong>Lighting matters most.</strong> Face a window or a lamp. MediaPipe loses tracking fast in dim rooms —
+          if it's not finding your hand, turn a light on.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">📏</div>
+        <p><strong>Keep your hand 30–70 cm from the camera</strong> (roughly arm's length to half). Too close = fingers
+          blur. Too far = landmarks aren't detected reliably.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🐢</div>
+        <p><strong>Move deliberately.</strong> The system runs at ~30 fps. Slow, clear gestures work far better than
+          fast flicks. Think about the gesture as you make it.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🔄</div>
+        <p><strong>Works alongside the mouse.</strong> You can switch between gesture and mouse control mid-session.
+          Gesture mode doesn't disable mouse or keyboard shortcuts.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🤚</div>
+        <p><strong>Select first, then transform.</strong> Pinch to select an object (it highlights teal), then switch to
+          fist to rotate or two-hand pinch to scale. The selection persists between gestures.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🖥</div>
+        <p><strong>The mini preview</strong> in the bottom HUD shows your hand skeleton in real time. If the lines are
+          choppy or missing, MediaPipe isn't tracking well — improve lighting or move closer to camera.</p>
+      </div>
     </div>
   </div>
 
-</div>
-
-<!-- Tips -->
-<div class="tips">
-  <h2>Tips for best results</h2>
-  <div class="tip-list">
-    <div class="tip">
-      <div class="tip-icon">💡</div>
-      <p><strong>Lighting matters most.</strong> Face a window or a lamp. MediaPipe loses tracking fast in dim rooms — if it's not finding your hand, turn a light on.</p>
-    </div>
-    <div class="tip">
-      <div class="tip-icon">📏</div>
-      <p><strong>Keep your hand 30–70 cm from the camera</strong> (roughly arm's length to half). Too close = fingers blur. Too far = landmarks aren't detected reliably.</p>
-    </div>
-    <div class="tip">
-      <div class="tip-icon">🐢</div>
-      <p><strong>Move deliberately.</strong> The system runs at ~30 fps. Slow, clear gestures work far better than fast flicks. Think about the gesture as you make it.</p>
-    </div>
-    <div class="tip">
-      <div class="tip-icon">🔄</div>
-      <p><strong>Works alongside the mouse.</strong> You can switch between gesture and mouse control mid-session. Gesture mode doesn't disable mouse or keyboard shortcuts.</p>
-    </div>
-    <div class="tip">
-      <div class="tip-icon">🤚</div>
-      <p><strong>Select first, then transform.</strong> Pinch to select an object (it highlights teal), then switch to fist to rotate or two-hand pinch to scale. The selection persists between gestures.</p>
-    </div>
-    <div class="tip">
-      <div class="tip-icon">🖥</div>
-      <p><strong>The mini preview</strong> in the bottom HUD shows your hand skeleton in real time. If the lines are choppy or missing, MediaPipe isn't tracking well — improve lighting or move closer to camera.</p>
-    </div>
+  <!-- Launch CTA -->
+  <div class="launch">
+    <a class="launch-btn" href="/">Open editor + enable gestures</a>
+    <p>Click the 🖐 Gesture button in the top bar to activate your webcam</p>
   </div>
-</div>
-
-<!-- Launch CTA -->
-<div class="launch">
-  <a class="launch-btn" href="/">Open editor + enable gestures</a>
-  <p>Click the 🖐 Gesture button in the top bar to activate your webcam</p>
-</div>
 
 </body>
+
 </html>
