@@ -83,8 +83,8 @@ const OP  = { CREATE:'create', DELETE:'delete', TRANSFORM:'transform', METADATA:
 const MSG = { OPERATION:'operation', SNAPSHOT:'snapshot', JOIN:'join', PRESENCE:'presence', PING:'ping', PONG:'pong' };
 
 // ── Config ───────────────────────────────────────────────────────────────────
-const API_URL = window.API_URL || `${location.protocol}//${location.hostname}:8080/api`;
-const WS_URL  = window.WS_URL  || `ws://${location.hostname}:8080`;
+const API_URL = window.API_URL || `${location.origin}/api`;
+const WS_URL  = window.WS_URL  || `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
 
 function getToken() { return localStorage.getItem('token'); }
 function getUser()  { return JSON.parse(localStorage.getItem('user') || 'null'); }

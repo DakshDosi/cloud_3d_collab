@@ -9,7 +9,7 @@ export class HistoryPanel {
     this.visible   = false;
     this.versions  = [];
     this.branch    = 'main';
-    this.api       = `${location.protocol}//${location.hostname}:8080/api`;
+    this.api       = `${location.protocol}//${location.hostname}:/api`;
 
     this._buildDOM();
   }

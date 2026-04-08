@@ -1,5 +1,5 @@
 // client/js/authManager.js
-const API = `${location.protocol}//${location.hostname}:8080/api`;
+const API = `${location.origin}/api`;
 
 class AuthManager {
   constructor() {

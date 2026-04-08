@@ -61,7 +61,7 @@
 </div>
 
 <script>
-  const API = `${location.protocol}//${location.hostname}:8080/api`;
+  const API = `${location.origin}/api`;
 
   document.getElementById('pwToggle').addEventListener('click', () => {
     const inp = document.getElementById('password');

@@ -435,13 +435,13 @@
     }
 
     // ── Set API / WS URLs ─────────────────────────────────────────────────
-    const host = location.hostname;
-    const proto = location.protocol;
+    //const host = location.hostname;
+    //const proto = location.protocol;
     // On production (port 443 via CloudFront) no port needed.
     // On local dev port 8080 is needed.
-    const port = (location.port === '80' || location.port === '443' || location.port === '') ? '' : ':8080';
-    window.API_URL = `${proto}//${host}${port}/api`;
-    window.WS_URL = `${proto === 'https:' ? 'wss' : 'ws'}://${host}${port}`;
+    const API = `${location.origin}/api`;
+    const API_URL = window.API_URL || `${location.origin}/api`;
+    const WS_URL  = window.WS_URL  || `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
 
     // ── Topbar user info ──────────────────────────────────────────────────
     document.getElementById('topbarUsername').textContent = user?.username || 'You';
