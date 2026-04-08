@@ -171,6 +171,7 @@ class CollaborativeEditor {
     this.controls.dampingFactor = 0.08;
     this.controls.minDistance = 2;
     this.controls.maxDistance = 40;
+    this.controls.zoomSpeed = 2.5;
 
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
