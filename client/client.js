@@ -386,7 +386,16 @@ class CollaborativeEditor {
     if (!mesh) return;
     this._applyTransformToMesh(mesh, obj);
     mesh.material.color.set(obj.metadata.color.value);
-    if (this.selectedObject === obj.id) this._renderSelectedInfo();
+    if (this.selectedObject === obj.id) {
+      // Follow the object if it's moved
+      if (this._dragging) {
+        const delta = mesh.position.clone().sub(this.controls.target);
+        this.camera.position.add(delta);
+        this.controls.target.copy(mesh.position);
+        this.controls.update();
+      }
+      this._renderSelectedInfo();
+    }
   }
 
   _applyTransformToMesh(mesh, obj) {
@@ -462,6 +471,10 @@ class CollaborativeEditor {
     const s = obj.transform.scale.value;
     const ns = { x: Math.max(0.1, s.x * f), y: Math.max(0.1, s.y * f), z: Math.max(0.1, s.z * f) };
     this._sendOp({ op: OP.TRANSFORM, objectId: id, property: 'scale', value: ns });
+  }
+
+  changeObjectColor(id, hexColor) {
+    this._sendOp({ op: OP.METADATA, objectId: id, property: 'color', value: hexColor });
   }
 
   deleteSelected() {
@@ -594,6 +607,7 @@ class CollaborativeEditor {
 
   // ── Selection UI ──────────────────────────────────────────────────────────
   _select(id) {
+    if (this.selectedObject === id) return;
     this._deselect();
     this.selectedObject = id;
     this.selectedMesh   = this.meshes.get(id);
@@ -601,6 +615,13 @@ class CollaborativeEditor {
       this.selectedMesh.material = this.selectedMesh.material.clone();
       this.selectedMesh.material.emissive.setHex(0x4ECDC4);
       this.selectedMesh.material.emissiveIntensity = 0.35;
+
+      // Pan camera so the target is the selected object, enabling zoom relative to it
+      const newTarget = this.selectedMesh.position.clone();
+      const delta = newTarget.clone().sub(this.controls.target);
+      this.camera.position.add(delta);
+      this.controls.target.copy(newTarget);
+      this.controls.update();
     }
     this._renderSelectedInfo();
   }
@@ -614,6 +635,8 @@ class CollaborativeEditor {
     this.selectedMesh   = null;
     const el = document.getElementById('selected-info');
     if (el) el.style.display = 'none';
+    const d = document.getElementById('selected-details');
+    if (d) delete d.dataset.selectedId;
   }
 
   _renderSelectedInfo() {
@@ -624,12 +647,35 @@ class CollaborativeEditor {
     el.style.display = 'block';
     const p = obj.transform.position.value;
     const s = obj.transform.scale.value;
-    d.innerHTML = `
-      <div class="info-row"><span class="info-label">Type</span><span>${obj.geometry}</span></div>
-      <div class="info-row"><span class="info-label">Pos</span><span>${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}</span></div>
-      <div class="info-row"><span class="info-label">Scale</span><span>${s.x.toFixed(2)}</span></div>
-      <div class="info-row"><span class="info-label">Color</span><span style="background:${obj.metadata.color.value};padding:1px 8px;border-radius:3px;font-size:10px">${obj.metadata.color.value}</span></div>
-    `;
+    
+    if (d.dataset.selectedId === this.selectedObject) {
+      const posSpan = d.querySelector('#info-pos');
+      if (posSpan) posSpan.textContent = `${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}`;
+      const scaleSpan = d.querySelector('#info-scale');
+      if (scaleSpan) scaleSpan.textContent = `${s.x.toFixed(2)}`;
+      
+      const picker = d.querySelector('#obj-color-picker');
+      // Update color only if not actively picking
+      if (picker && document.activeElement !== picker) {
+        picker.value = obj.metadata.color.value;
+      }
+    } else {
+      d.dataset.selectedId = this.selectedObject;
+      d.innerHTML = `
+        <div class="info-row"><span class="info-label">Type</span><span>${obj.geometry}</span></div>
+        <div class="info-row"><span class="info-label">Pos</span><span id="info-pos">${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}</span></div>
+        <div class="info-row"><span class="info-label">Scale</span><span id="info-scale">${s.x.toFixed(2)}</span></div>
+        <div class="info-row" style="align-items: center;"><span class="info-label">Color</span>
+          <input type="color" id="obj-color-picker" value="${obj.metadata.color.value}" style="cursor:pointer; background:none; border:none; width:24px; height:24px; padding:0; border-radius:3px;">
+        </div>
+      `;
+      const picker = d.querySelector('#obj-color-picker');
+      if (picker) {
+        picker.addEventListener('input', (e) => {
+          this.changeObjectColor(this.selectedObject, e.target.value);
+        });
+      }
+    }
   }
 
   // ── Cursors ───────────────────────────────────────────────────────────────
